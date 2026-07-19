@@ -177,7 +177,10 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
   <div class="header">
     <div class="header-top">
       <span class="app-name">Habito</span>
-      <span class="streak-badge" id="streak-badge">🔥 0 meses</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button id="visibility-btn" onclick="toggleVisibility()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0;line-height:1;" title="Mostrar/ocultar saldos">👁</button>
+        <span class="streak-badge" id="streak-badge" style="display:none;">🔥 0 meses</span>
+      </div>
     </div>
     <div class="hero-card">
       <div class="hero-label" id="hero-label">TOTAL</div>
@@ -543,6 +546,20 @@ function fmtUSD(n) { return 'u$s\u00A0' + fmtNum(n, 2); }
 function fmtARS(n) { return '$\u00A0'   + fmtNum(n, 0); }
 
 // ── TOTALS ────────────────────────────────────────────────────
+let balancesVisible = true;
+
+function toggleVisibility() {
+  balancesVisible = !balancesVisible;
+  const btn = document.getElementById('visibility-btn');
+  btn.textContent = balancesVisible ? '👁' : '👁‍🗨';
+  btn.style.opacity = balancesVisible ? '1' : '0.4';
+  renderHero();
+  renderAssets();
+}
+
+function maskValue(val) {
+  return '•••';
+}
 function safeRate() { return usdRate > 0 ? usdRate : 1; }
 function toARSval(a) {
   return a.currency === 'USD' ? a.balance * safeRate() : a.balance;
@@ -556,14 +573,15 @@ function render() { renderHero(); renderAssets(); renderSummary(); }
 function renderHero() {
   const usd = totalUSD();
   const ars = totalARS();
+  const mask = '•••';
   if (budgetCurrency === 'ARS') {
     document.getElementById('hero-label').textContent = 'TOTAL EN PESOS';
-    document.getElementById('hero-usd').textContent = fmtARS(ars);
-    document.getElementById('hero-ars').textContent = fmtUSD(usd);
+    document.getElementById('hero-usd').textContent = balancesVisible ? fmtARS(ars) : mask;
+    document.getElementById('hero-ars').textContent = balancesVisible ? fmtUSD(usd) : mask;
   } else {
     document.getElementById('hero-label').textContent = 'TOTAL EN USD';
-    document.getElementById('hero-usd').textContent = fmtUSD(usd);
-    document.getElementById('hero-ars').textContent = fmtARS(ars);
+    document.getElementById('hero-usd').textContent = balancesVisible ? fmtUSD(usd) : mask;
+    document.getElementById('hero-ars').textContent = balancesVisible ? fmtARS(ars) : mask;
   }
   document.getElementById('rate-display').textContent = '$\u00A0' + fmtNum(usdRate, 0);
   document.getElementById('rate-display').style.color = usdRateVerified ? 'var(--cyan)' : 'var(--orange)';
@@ -632,7 +650,9 @@ function renderAssets() {
     const objPct  = a.targetPct || 0;
     const diff    = realPct - objPct;
     const pctCls  = Math.abs(diff) <= 3 ? 'pct-ok' : Math.abs(diff) <= 8 ? 'pct-under' : diff > 0 ? 'pct-over' : 'pct-under';
-    const dispVal = a.currency === 'USD' ? fmtUSD(a.balance) : fmtARS(a.balance);
+    const dispVal = balancesVisible
+      ? (a.currency === 'USD' ? fmtUSD(a.balance) : fmtARS(a.balance))
+      : '•••';
     const rebal   = totARS * (objPct / 100) - arsVal;
     const rebalHtml = rebal >= 0
       ? `<span style="color:var(--green)">+${fmtARS(rebal)}</span>`
