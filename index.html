@@ -176,14 +176,13 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
   <!-- HEADER -->
   <div class="header">
     <div class="header-top">
-      <span class="app-name">Habito</span>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <button id="visibility-btn" onclick="toggleVisibility()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0;line-height:1;" title="Mostrar/ocultar saldos">👁</button>
-        <span class="streak-badge" id="streak-badge" style="display:none;">🔥 0 meses</span>
-      </div>
+      <span class="streak-badge" id="streak-badge" style="display:none;">🔥 0 meses</span>
     </div>
     <div class="hero-card">
-      <div class="hero-label" id="hero-label">TOTAL</div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+        <div class="hero-label" id="hero-label" style="margin-bottom:0;">TOTAL</div>
+        <button id="visibility-btn" onclick="toggleVisibility()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0;line-height:1;opacity:0.6;" title="Mostrar/ocultar saldos">◎</button>
+      </div>
       <div class="hero-usd" id="hero-usd">u$s 0</div>
       <div class="hero-ars" id="hero-ars">$ 0 ARS</div>
       <div class="rate-row">
@@ -223,15 +222,6 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
     </div>
     <div id="assets-list"></div>
 
-    <!-- Summary -->
-    <div id="summary-section" style="display:none;margin-top:8px;">
-      <div class="section-label"><span>RESUMEN</span></div>
-      <div class="summary-row" id="summary-rebalance-row" style="display:none;">
-        <span class="summary-label">Total a rebalancear</span>
-        <span class="summary-val" id="summary-aporte"></span>
-      </div>
-      <div id="summary-gap" style="display:none;font-size:9px;padding:6px 2px;"></div>
-    </div>
   </div>
 
   <!-- GOALS TAB -->
@@ -459,7 +449,7 @@ function loadStorage() {
 function persist() {
   try {
     localStorage.setItem(SK.assets, JSON.stringify(assets));
-    localStorage.setItem(SK.usdRate, String(usdRate));
+    localStorage.setItem(SK.rate, String(usdRate));
     localStorage.setItem(SK.budget, String(budget));
     localStorage.setItem(SK.budgetCurrency, budgetCurrency);
     localStorage.setItem(SK.rebalanceo, String(showRebalanceo));
@@ -542,7 +532,7 @@ function fmtNum(n, dec) {
   const result = dec > 0 ? intFmt + ',' + decPart : intFmt;
   return (neg ? '-' : '') + result;
 }
-function fmtUSD(n) { return 'u$s\u00A0' + fmtNum(n, 2); }
+function fmtUSD(n) { return 'u$s\u00A0' + fmtNum(n, 1); }
 function fmtARS(n) { return '$\u00A0'   + fmtNum(n, 0); }
 
 // ── TOTALS ────────────────────────────────────────────────────
@@ -551,15 +541,12 @@ let balancesVisible = true;
 function toggleVisibility() {
   balancesVisible = !balancesVisible;
   const btn = document.getElementById('visibility-btn');
-  btn.textContent = balancesVisible ? '👁' : '👁‍🗨';
-  btn.style.opacity = balancesVisible ? '1' : '0.4';
+  btn.textContent = balancesVisible ? '◎' : '⊙';
+  btn.style.opacity = balancesVisible ? '0.6' : '0.3';
   renderHero();
   renderAssets();
 }
 
-function maskValue(val) {
-  return '•••';
-}
 function safeRate() { return usdRate > 0 ? usdRate : 1; }
 function toARSval(a) {
   return a.currency === 'USD' ? a.balance * safeRate() : a.balance;
@@ -568,7 +555,7 @@ function totalARS() { return assets.reduce((s, a) => s + toARSval(a), 0); }
 function totalUSD() { return totalARS() / safeRate(); }
 
 // ── RENDER ────────────────────────────────────────────────────
-function render() { renderHero(); renderAssets(); renderSummary(); }
+function render() { renderHero(); renderAssets(); }
 
 function renderHero() {
   const usd = totalUSD();
@@ -597,7 +584,6 @@ function renderAssets() {
         <p>Sin activos.</p>
         <p style="font-size:10px;">Tocá el botón <strong style="color:var(--purple)">+</strong> para agregar tu primer activo.</p>
       </div>`;
-    document.getElementById('summary-section').style.display = 'none';
     document.getElementById('target-total-label').textContent = '';
     return;
   }
@@ -654,21 +640,28 @@ function renderAssets() {
       ? (a.currency === 'USD' ? fmtUSD(a.balance) : fmtARS(a.balance))
       : '•••';
     const rebal   = totARS * (objPct / 100) - arsVal;
-    const rebalHtml = rebal >= 0
-      ? `<span style="color:var(--green)">+${fmtARS(rebal)}</span>`
-      : `<span style="color:var(--red)">${fmtARS(rebal)}</span>`;
+    const rebalDisplay = budgetCurrency === 'USD'
+      ? fmtUSD(rebal / safeRate())
+      : fmtARS(rebal);
+    const rebalHtml = !balancesVisible
+      ? `<span style="color:var(--muted)">•••</span>`
+      : rebal >= 0
+        ? `<span style="color:var(--green)">+${rebalDisplay}</span>`
+        : `<span style="color:var(--red)">${rebalDisplay}</span>`;
     const rebalSection = showRebalanceo
       ? `<span style="color:var(--muted);">Rebalanceo: ${rebalHtml}</span>`
       : '';
     const aporte = aportes[i];
     const aporteDisplay = budgetCurrency === 'USD'
-      ? fmtUSD(Math.round(aporte / safeRate() * 100) / 100)
+      ? fmtUSD(aporte / safeRate())
       : fmtARS(aporte);
-    const aporteHtml = budARS > 0
-      ? (aporte > 0
-          ? `<span style="color:var(--cyan)">${aporteDisplay}</span>`
-          : `<span style="color:var(--muted)">— <span style="color:var(--orange);font-size:8px;">Sobreasignado</span></span>`)
-      : `<span style="color:var(--muted)">—</span>`;
+    const aporteHtml = !balancesVisible
+      ? `<span style="color:var(--muted)">•••</span>`
+      : budARS > 0
+        ? (aporte > 0
+            ? `<span style="color:var(--cyan)">${aporteDisplay}</span>`
+            : `<span style="color:var(--muted)">— <span style="color:var(--orange);font-size:8px;">Sobreasignado</span></span>`)
+        : `<span style="color:var(--muted)">—</span>`;
     const badge = badgeMap[a.type] || 'badge-other';
     const label = typeLabels[a.type] || a.type;
 
@@ -694,50 +687,6 @@ function renderAssets() {
       </div>
     </div>`;
   }).join('');
-}
-
-function renderSummary() {
-  if (!assets.length) return;
-  const totARS = totalARS();
-  const budARS = budgetInARS();
-
-  // Total deficit — sum of all underweight assets in ARS
-  let deficitTotal = 0;
-  assets.forEach(a => {
-    const r = totARS * ((a.targetPct||0)/100) - toARSval(a);
-    if (r > 0) deficitTotal += r;
-  });
-
-  // Total a rebalancear + gap — only show when rebalanceo toggle is ON
-  const rebalRow = document.getElementById('summary-rebalance-row');
-  const gapEl    = document.getElementById('summary-gap');
-  const secEl    = document.getElementById('summary-section');
-
-  if (!showRebalanceo) {
-    if (secEl)    secEl.style.display    = 'none';
-    if (rebalRow) rebalRow.style.display = 'none';
-    if (gapEl)    gapEl.style.display   = 'none';
-    return;
-  }
-
-  if (secEl)    secEl.style.display    = 'block';
-  if (rebalRow) rebalRow.style.display = '';
-
-  const deficitDisplay = budgetCurrency === 'USD'
-    ? fmtUSD(deficitTotal / safeRate())
-    : fmtARS(deficitTotal);
-  const aprtEl = document.getElementById('summary-aporte');
-  if (aprtEl) aprtEl.innerHTML = `<span style="color:var(--cyan)">${deficitDisplay}</span>`;
-
-  // Static rebalancing context note
-  if (gapEl) {
-    if (showRebalanceo && deficitTotal > 0) {
-      gapEl.innerHTML = `<span style="color:var(--muted)">Mové fondos de activos sobreasignados a subasignados para rebalancear.</span>`;
-      gapEl.style.display = 'block';
-    } else {
-      gapEl.style.display = 'none';
-    }
-  }
 }
 
 // ── MODAL ─────────────────────────────────────────────────────
@@ -849,13 +798,13 @@ function onBudgetChange() {
 function setBudgetCurrency(cur) {
   if (cur === budgetCurrency) return;
   const live = parseFloat(document.getElementById('budget-input').value) || 0;
-  // Convert existing input value to new currency
   if (live > 0) {
     const converted = cur === 'USD'
-      ? live / safeRate()        // ARS → USD
-      : live * safeRate();       // USD → ARS
-    document.getElementById('budget-input').value = parseFloat(converted.toFixed(2));
-    budget = converted;
+      ? live / safeRate()
+      : live * safeRate();
+    const rounded = parseFloat(converted.toFixed(cur === 'USD' ? 2 : 0));
+    document.getElementById('budget-input').value = rounded;
+    budget = rounded;
   }
   budgetCurrency = cur;
   applyBudgetCurrencyUI();
