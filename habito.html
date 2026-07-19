@@ -1,0 +1,1408 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Habito</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:#282A36;--bg-dark:#21222C;--bg-darker:#191A21;
+  --selection:#44475A;--fg:#F8F8F2;--muted:#6272A4;
+  --purple:#BD93F9;--pink:#FF79C6;--green:#50FA7B;
+  --red:#FF5555;--orange:#FFB86C;--yellow:#F1FA8C;--cyan:#8BE9FD;
+  --r-sm:6px;--r-md:10px;--r-lg:14px;--r-xl:20px;--r-full:9999px;
+  --sp-xs:4px;--sp-sm:8px;--sp-md:12px;--sp-lg:16px;--sp-xl:24px;--sp-xxl:32px;
+}
+html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins',sans-serif;font-size:12px;overflow:hidden;}
+#app{display:flex;flex-direction:column;height:100vh;max-width:430px;margin:0 auto;position:relative;background:var(--bg);}
+
+/* HEADER */
+.header{padding:14px 16px 10px;background:var(--bg);border-bottom:1px solid var(--selection);flex-shrink:0;}
+.header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.app-name{font-size:13px;font-weight:700;color:var(--fg);}
+.streak-badge{background:rgba(189,147,249,0.15);border:1px solid var(--purple);border-radius:var(--r-sm);padding:3px 8px;font-size:10px;color:var(--purple);font-weight:500;}
+
+/* HERO CARD */
+.hero-card{background:var(--bg-dark);border:1px solid var(--selection);border-radius:var(--r-lg);padding:14px 16px;}
+.hero-label{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;}
+.hero-usd{font-size:34px;font-weight:700;color:var(--fg);line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hero-ars{font-size:10px;font-weight:300;color:var(--muted);margin-top:4px;}
+.rate-row{display:flex;align-items:center;gap:6px;margin-top:10px;}
+.rate-label{font-size:9px;color:var(--muted);}
+.rate-val{font-size:11px;font-weight:700;color:var(--cyan);cursor:pointer;}
+.rate-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:0;line-height:1;}
+.rate-input{background:var(--bg-darker);border:1px solid var(--cyan);border-radius:var(--r-sm);color:var(--fg);font-family:'Poppins',sans-serif;font-size:11px;font-weight:700;padding:3px 7px;width:90px;outline:none;}
+
+/* SCROLL AREA */
+.scroll-area{flex:1;overflow-y:auto;padding:12px 16px 140px;-webkit-overflow-scrolling:touch;}
+.scroll-area::-webkit-scrollbar{width:3px;}
+.scroll-area::-webkit-scrollbar-track{background:transparent;}
+.scroll-area::-webkit-scrollbar-thumb{background:var(--selection);border-radius:2px;}
+
+/* SECTION LABEL */
+.section-label{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;}
+
+/* ASSET ROW */
+.asset-row{background:var(--bg-dark);border:1px solid var(--selection);border-radius:var(--r-md);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;transition:border-color .15s;}
+.asset-row:hover,.asset-row:active{border-color:var(--purple);}
+.asset-left{flex:1;min-width:0;}
+.asset-name{font-size:13px;font-weight:700;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.asset-broker{font-size:10px;color:var(--muted);margin-top:2px;}
+.asset-right{text-align:right;flex-shrink:0;margin-left:8px;}
+.asset-val{font-size:12px;font-weight:700;color:var(--fg);}
+.asset-pct-row{display:flex;gap:8px;justify-content:flex-end;margin-top:2px;font-size:9px;}
+.pct-obj{color:var(--muted);}
+.pct-ok{color:var(--green);}
+.pct-over{color:var(--red);}
+.pct-under{color:var(--orange);}
+
+/* BADGES */
+.badge{display:inline-block;font-size:8px;padding:2px 5px;border-radius:var(--r-sm);font-weight:500;}
+.badge-stock{background:rgba(139,233,253,0.12);color:var(--cyan);border:1px solid rgba(139,233,253,0.3);}
+.badge-crypto{background:rgba(189,147,249,0.12);color:var(--purple);border:1px solid rgba(189,147,249,0.3);}
+.badge-etf{background:rgba(80,250,123,0.12);color:var(--green);border:1px solid rgba(80,250,123,0.3);}
+.badge-bond{background:rgba(241,250,140,0.12);color:var(--yellow);border:1px solid rgba(241,250,140,0.3);}
+.badge-fci{background:rgba(255,184,108,0.12);color:var(--orange);border:1px solid rgba(255,184,108,0.3);}
+.badge-cash{background:rgba(98,114,164,0.12);color:var(--muted);border:1px solid rgba(98,114,164,0.3);}
+.badge-other{background:rgba(98,114,164,0.12);color:var(--muted);border:1px solid rgba(98,114,164,0.3);}
+
+/* SUMMARY */
+.summary-row{background:var(--bg-dark);border:1px solid var(--selection);border-radius:var(--r-md);padding:10px 12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.summary-label{font-size:9px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase;}
+.summary-val{font-size:12px;font-weight:700;}
+
+/* BUDGET */
+.budget-row{background:var(--bg-darker);border:1px solid var(--selection);border-radius:var(--r-md);padding:8px 12px;display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.budget-label{font-size:10px;color:var(--muted);white-space:nowrap;}
+.budget-input{background:none;border:none;color:var(--fg);font-family:'Poppins',sans-serif;font-size:12px;font-weight:700;outline:none;flex:1;min-width:0;}
+.budget-input::placeholder{color:var(--muted);font-weight:400;}
+.budget-currency-toggle{display:flex;border:1px solid var(--selection);border-radius:var(--r-sm);overflow:hidden;flex-shrink:0;}
+.budget-currency-toggle button{background:none;border:none;color:var(--muted);font-family:'Poppins',sans-serif;font-size:9px;font-weight:700;padding:3px 7px;cursor:pointer;transition:all .15s;}
+.budget-currency-toggle button.active{background:var(--purple);color:var(--bg);}
+.budget-currency-toggle button:not(.active):hover{color:var(--fg);}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:40px 16px;color:var(--muted);}
+.empty-state p{margin-bottom:6px;line-height:1.6;}
+
+/* REBALANCEO TOGGLE */
+.rebal-toggle{display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none;}
+.rebal-toggle-label{font-size:9px;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase;}
+.toggle-pill{width:28px;height:15px;border-radius:var(--r-full);background:var(--selection);position:relative;transition:background .2s;flex-shrink:0;}
+.toggle-pill.on{background:var(--purple);}
+.toggle-pill::after{content:'';position:absolute;top:2px;left:2px;width:11px;height:11px;border-radius:50%;background:var(--fg);transition:transform .2s;}
+.toggle-pill.on::after{transform:translateX(13px);}
+/* TARGET INDICATOR */
+.target-indicator{font-size:9px;color:var(--muted);}
+.target-ok{color:var(--green);}
+.target-warn{color:var(--orange);}
+
+/* FAB */
+.fab{position:fixed;bottom:76px;right:16px;width:44px;height:44px;border-radius:var(--r-full);background:var(--purple);border:none;color:var(--bg);font-size:24px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(189,147,249,0.35);transition:transform .15s,box-shadow .15s;z-index:49;}
+.fab:hover{box-shadow:0 6px 20px rgba(189,147,249,0.5);}
+.fab:active{transform:scale(.93);}
+@media(min-width:430px){.fab{right:calc(50% - 215px + 16px);}}
+
+/* BOTTOM NAV */
+.nav{position:fixed;bottom:8px;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:398px;background:var(--bg-darker);border:1px solid var(--selection);border-radius:var(--r-xl);height:56px;display:flex;align-items:center;z-index:50;}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:6px 0;position:relative;}
+.nav-icon{font-size:16px;line-height:1;}
+.nav-label{font-size:9px;font-weight:500;}
+.nav-item.active .nav-label{color:var(--purple);}
+.nav-item.inactive .nav-label{color:var(--muted);}
+.nav-indicator{position:absolute;bottom:-2px;width:32px;height:3px;background:var(--purple);border-radius:2px 2px 0 0;}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:flex-end;justify-content:center;z-index:100;opacity:0;pointer-events:none;transition:opacity .2s;}
+.overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--bg-dark);border:1px solid var(--selection);border-top:1px solid var(--purple);border-radius:var(--r-xl) var(--r-xl) 0 0;padding:20px;width:100%;max-width:430px;transform:translateY(100%);transition:transform .2s ease-out;max-height:92vh;overflow-y:auto;}
+.overlay.open .modal{transform:translateY(0);}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.modal-title{font-size:13px;font-weight:700;color:var(--purple);}
+.modal-close{background:none;border:1px solid var(--selection);border-radius:var(--r-sm);color:var(--muted);cursor:pointer;padding:2px 8px;font-size:14px;font-family:'Poppins',sans-serif;transition:all .15s;}
+.modal-close:hover{border-color:var(--red);color:var(--red);}
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;}
+.field input,.field select{width:100%;background:var(--bg-darker);border:1px solid var(--selection);border-radius:var(--r-sm);color:var(--fg);font-family:'Poppins',sans-serif;font-size:12px;padding:8px 10px;outline:none;transition:border-color .15s;appearance:none;-webkit-appearance:none;}
+.field input:focus,.field select:focus{border-color:var(--cyan);}
+.field select option{background:var(--bg-dark);color:var(--fg);}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.modal-actions{display:flex;gap:8px;margin-top:16px;}
+/* TOAST */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--selection);color:var(--fg);font-family:'Poppins',sans-serif;font-size:11px;font-weight:500;padding:8px 16px;border-radius:var(--r-full);z-index:200;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;}
+.btn{background:none;border:1px solid var(--selection);border-radius:var(--r-md);color:var(--muted);font-family:'Poppins',sans-serif;font-size:12px;font-weight:700;padding:10px 16px;cursor:pointer;transition:all .15s;flex:1;}
+.btn:hover{border-color:var(--fg);color:var(--fg);}
+.btn-purple{border-color:var(--purple);color:var(--purple);}
+.btn-purple:hover{background:rgba(189,147,249,.12);}
+.btn-red{border-color:var(--red);color:var(--red);}
+.btn-red:hover{background:rgba(255,85,85,.12);}
+
+/* AI ADVISOR */
+.ai-cta-btn{background:transparent;border:1px solid var(--purple);border-radius:var(--r-md);color:var(--purple);font-family:'Poppins',sans-serif;font-size:13px;font-weight:700;padding:12px 24px;cursor:pointer;transition:background .15s;width:100%;}
+.ai-cta-btn:hover{background:rgba(189,147,249,0.1);}
+.ai-msg{background:var(--bg-dark);border:1px solid var(--selection);border-radius:var(--r-lg);padding:12px 14px;margin-bottom:8px;font-size:11px;line-height:1.7;color:var(--fg);}
+.ai-msg.ai-user{background:rgba(189,147,249,0.08);border-color:rgba(189,147,249,0.25);color:var(--muted);font-size:10px;}
+.ai-msg-label{font-size:8px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;margin-bottom:5px;color:var(--purple);}
+.ai-options-wrap{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
+.ai-opt-btn{background:var(--bg-dark);border:1px solid var(--selection);border-radius:var(--r-md);color:var(--fg);font-family:'Poppins',sans-serif;font-size:11px;font-weight:500;padding:10px 14px;cursor:pointer;text-align:left;transition:all .15s;}
+.ai-opt-btn:hover{border-color:var(--purple);color:var(--purple);}
+.ai-dots::after{content:'...';animation:dots 1.2s step-end infinite;}
+@keyframes dots{0%{content:'.';}33%{content:'..';}66%{content:'...';}}
+.goal-card{background:var(--bg-dark);border:1px solid var(--selection);border-radius:var(--r-lg);padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:border-color .15s;}
+.goal-card:hover{border-color:var(--purple);}
+.goal-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+.goal-title{display:flex;align-items:center;gap:7px;}
+.goal-emoji{font-size:18px;line-height:1;}
+.goal-name{font-size:13px;font-weight:700;color:var(--fg);}
+.goal-pct{font-size:16px;font-weight:700;}
+.goal-progress-track{height:5px;background:var(--selection);border-radius:var(--r-full);overflow:hidden;margin-bottom:7px;}
+.goal-progress-fill{height:100%;border-radius:var(--r-full);transition:width .5s ease;}
+.goal-meta{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:6px;}
+.goal-eta{font-size:10px;color:var(--muted);font-style:italic;margin-top:4px;padding-top:6px;border-top:1px solid var(--selection);}
+.goal-eta span{color:var(--purple);font-style:normal;font-weight:700;}
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:200;opacity:0;pointer-events:none;transition:opacity .15s;padding:20px;}
+.confirm-overlay.open{opacity:1;pointer-events:all;}
+.confirm-box{background:var(--bg-dark);border:1px solid var(--selection);border-radius:var(--r-lg);padding:20px;width:100%;max-width:320px;}
+.confirm-title{font-size:13px;font-weight:700;color:var(--fg);margin-bottom:8px;}
+.confirm-msg{font-size:11px;color:var(--muted);margin-bottom:16px;line-height:1.5;}
+.confirm-actions{display:flex;gap:8px;}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-top">
+      <span class="app-name">Habito</span>
+      <span class="streak-badge" id="streak-badge">🔥 0 meses</span>
+    </div>
+    <div class="hero-card">
+      <div class="hero-label" id="hero-label">TOTAL</div>
+      <div class="hero-usd" id="hero-usd">u$s 0</div>
+      <div class="hero-ars" id="hero-ars">$ 0 ARS</div>
+      <div class="rate-row">
+        <span class="rate-label">Dólar</span>
+        <span class="rate-val" id="rate-display" onclick="toggleRateEdit()"></span>
+        <input class="rate-input" id="rate-input" type="number" style="display:none;" onblur="saveRate()" onkeydown="if(event.key==='Enter')saveRate()">
+        <button class="rate-btn" onclick="toggleRateEdit()" title="Editar tipo de cambio">✎</button>
+        <span id="rate-status" style="font-size:9px;color:var(--muted);"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCROLL AREA -->
+  <div class="scroll-area">
+    <!-- Monthly budget -->
+    <div style="margin-bottom:12px;">
+      <div class="budget-row">
+        <span class="budget-label">Aporte mensual</span>
+        <input class="budget-input" id="budget-input" type="number" placeholder="$ 0" oninput="onBudgetChange()" onchange="onBudgetChange()">
+        <div class="budget-currency-toggle">
+          <button id="btn-ars" class="active" onclick="setBudgetCurrency('ARS')">ARS</button>
+          <button id="btn-usd" onclick="setBudgetCurrency('USD')">USD</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Assets section -->
+    <div class="section-label">
+      <span>ACTIVOS</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span id="target-total-label" class="target-indicator"></span>
+        <div class="rebal-toggle" onclick="toggleRebalanceo()" title="Mostrar rebalanceo">
+          <span class="rebal-toggle-label">Rebalanceo</span>
+          <div class="toggle-pill" id="rebal-pill"></div>
+        </div>
+      </div>
+    </div>
+    <div id="assets-list"></div>
+
+    <!-- Summary -->
+    <div id="summary-section" style="display:none;margin-top:8px;">
+      <div class="section-label"><span>RESUMEN</span></div>
+      <div class="summary-row" id="summary-rebalance-row" style="display:none;">
+        <span class="summary-label">Total a rebalancear</span>
+        <span class="summary-val" id="summary-aporte"></span>
+      </div>
+      <div id="summary-gap" style="display:none;font-size:9px;padding:6px 2px;"></div>
+    </div>
+  </div>
+
+  <!-- GOALS TAB -->
+  <div id="tab-goals" class="scroll-area" style="display:none;padding-bottom:140px;">
+    <div class="section-label"><span>OBJETIVOS</span></div>
+    <div id="goals-list"></div>
+    <div id="goals-empty" class="empty-state" style="display:none;">
+      <p>Sin objetivos.</p>
+      <p style="font-size:10px;">Tocá el botón <strong style="color:var(--purple)">+</strong> para agregar tu primer objetivo.</p>
+    </div>
+  </div>
+
+  <!-- AI ADVISOR TAB -->
+  <div id="tab-ai" class="scroll-area" style="display:none;padding-bottom:140px;">
+
+    <!-- Idle state: no profile yet -->
+    <div id="ai-idle">
+      <div style="text-align:center;padding:24px 16px 20px;">
+        <div style="font-size:32px;margin-bottom:10px;">🤖</div>
+        <div style="font-size:13px;font-weight:700;color:var(--fg);margin-bottom:6px;">Advisor IA</div>
+        <div style="font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:20px;">¿Dónde pongo mis ahorros este mes?</div>
+        <button class="ai-cta-btn" onclick="startAdvisor()">Analizar mi portafolio</button>
+      </div>
+    </div>
+
+    <!-- Interview + response area -->
+    <div id="ai-session" style="display:none;">
+      <!-- Messages -->
+      <div id="ai-messages"></div>
+      <!-- Option buttons -->
+      <div id="ai-options" style="margin-top:8px;"></div>
+      <!-- Loading -->
+      <div id="ai-loading" style="display:none;padding:12px 0;text-align:center;">
+        <span style="font-size:11px;color:var(--muted);">Analizando<span class="ai-dots"></span></span>
+      </div>
+      <!-- Restart -->
+      <div id="ai-restart" style="display:none;text-align:center;margin-top:16px;">
+        <button class="btn" onclick="resetAdvisor()" style="font-size:11px;padding:7px 16px;">Empezar de nuevo</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FAB -->
+  <button class="fab" id="fab-btn" onclick="onFabClick()" title="Agregar">+</button>
+
+  <!-- BOTTOM NAV -->
+  <nav class="nav">
+    <div class="nav-item active" id="nav-portfolio" onclick="switchTab('portfolio')">
+      <span class="nav-icon">💼</span>
+      <span class="nav-label">Portafolio</span>
+      <div class="nav-indicator"></div>
+    </div>
+    <div class="nav-item inactive" id="nav-goals" onclick="switchTab('goals')">
+      <span class="nav-icon">🎯</span>
+      <span class="nav-label">Objetivos</span>
+    </div>
+    <div class="nav-item inactive" id="nav-ai" onclick="switchTab('ai')">
+      <span class="nav-icon">🤖</span>
+      <span class="nav-label">Advisor IA</span>
+    </div>
+  </nav>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="overlay" id="overlay" onclick="onOverlayClick(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">+ Agregar activo</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="field">
+      <label>Nombre del activo</label>
+      <input id="f-name" type="text" placeholder="ej. BTC, NVDA, FCI Pesos">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Tipo</label>
+        <select id="f-type">
+          <option value="Crypto">Crypto</option>
+          <option value="Stock">Acción</option>
+          <option value="ETF">ETF</option>
+          <option value="FCI">FCI</option>
+          <option value="Bond">Bono</option>
+          <option value="Cash">Efectivo</option>
+          <option value="Other">Otro</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Broker / Banco</label>
+        <input id="f-broker" type="text" placeholder="ej. Binance">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Saldo actual</label>
+        <input id="f-balance" type="number" placeholder="0" step="any" min="0">
+      </div>
+      <div class="field">
+        <label>Moneda</label>
+        <select id="f-currency">
+          <option value="USD">USD (u$s)</option>
+          <option value="ARS">ARS ($)</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>% Objetivo <span style="font-weight:300;text-transform:none;letter-spacing:0;">(participación en el portafolio)</span></label>
+      <input id="f-target" type="number" placeholder="0" min="0" max="100" step="0.1">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-red" id="btn-delete" style="display:none;" onclick="confirmDelete()">Eliminar</button>
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-purple" onclick="saveAsset()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE DIALOG -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-title">Eliminar</div>
+    <div class="confirm-msg" id="confirm-msg">¿Eliminar este elemento? Esta acción no se puede deshacer.</div>
+    <div class="confirm-actions">
+      <button class="btn" onclick="closeConfirm()">Cancelar</button>
+      <button class="btn btn-red" onclick="confirmDeleteAction()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- GOAL MODAL -->
+<div class="overlay" id="goal-overlay" onclick="onGoalOverlayClick(event)">
+  <div class="modal" id="goal-modal">
+    <div class="modal-header">
+      <span class="modal-title" id="goal-modal-title">🎯 Agregar objetivo</span>
+      <button class="modal-close" onclick="closeGoalModal()">✕</button>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Ícono (emoji)</label>
+        <input id="g-emoji" type="text" placeholder="🎯" maxlength="2">
+      </div>
+      <div class="field">
+        <label>Moneda</label>
+        <select id="g-currency">
+          <option value="USD">USD (u$s)</option>
+          <option value="ARS">ARS ($)</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Nombre del objetivo</label>
+      <input id="g-name" type="text" placeholder="ej. Auto, Viaje Europa, Fondo retiro">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Meta</label>
+        <input id="g-target" type="number" placeholder="0" step="any" min="0">
+      </div>
+      <div class="field">
+        <label>Ahorrado hasta hoy</label>
+        <input id="g-current" type="number" placeholder="0" step="any" min="0">
+      </div>
+    </div>
+    <div class="field">
+      <label>Aporte mensual al objetivo <span id="g-monthly-currency-hint" style="font-weight:300;text-transform:none;letter-spacing:0;">(en la moneda del objetivo)</span></label>
+      <input id="g-monthly" type="number" placeholder="0" step="any" min="0">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-red" id="g-btn-delete" style="display:none;" onclick="confirmGoalDelete()">Eliminar</button>
+      <button class="btn" onclick="closeGoalModal()">Cancelar</button>
+      <button class="btn btn-purple" onclick="saveGoal()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────
+let assets = [];
+let usdRate = 1200;
+let budget = 0;
+let budgetCurrency = 'ARS';
+let showRebalanceo = false;
+let editingId = null;
+let rateEditing = false;
+
+const SK = {
+  assets:          'habito_assets',
+  rate:            'habito_usd_rate',
+  budget:          'habito_budget',
+  budgetCurrency:  'habito_budget_currency',
+  rebalanceo:      'habito_rebalanceo',
+  streak:          'habito_streak',
+};
+
+// ── INIT ──────────────────────────────────────────────────────
+function init() {
+  loadStorage();
+  fetchUSDRate();
+  loadStreak();
+  render();
+}
+
+function loadStorage() {
+  try {
+    const a = localStorage.getItem(SK.assets);
+    if (a) assets = JSON.parse(a);
+    const r = localStorage.getItem(SK.rate);
+    if (r) usdRate = parseFloat(r);
+    const b = localStorage.getItem(SK.budget);
+    if (b) {
+      budget = parseFloat(b);
+      document.getElementById('budget-input').value = budget || '';
+    }
+    const bc = localStorage.getItem(SK.budgetCurrency);
+    if (bc) { budgetCurrency = bc; applyBudgetCurrencyUI(); }
+    const rb = localStorage.getItem(SK.rebalanceo);
+    if (rb) { showRebalanceo = rb === 'true'; applyRebalanceoUI(); }
+  } catch(e) { console.warn('Storage load error', e); }
+}
+
+function persist() {
+  try {
+    localStorage.setItem(SK.assets, JSON.stringify(assets));
+    localStorage.setItem(SK.usdRate, String(usdRate));
+    localStorage.setItem(SK.budget, String(budget));
+    localStorage.setItem(SK.budgetCurrency, budgetCurrency);
+    localStorage.setItem(SK.rebalanceo, String(showRebalanceo));
+  } catch(e) { console.warn('Storage save error', e); }
+}
+
+// ── MEP RATE ──────────────────────────────────────────────────
+let usdRateVerified = false;
+
+async function fetchUSDRate() {
+  const status = document.getElementById('rate-status');
+  const hasSaved = !!localStorage.getItem(SK.rate);
+  if (!hasSaved) {
+    status.textContent = '● cargando';
+    status.style.color = 'var(--muted)';
+  }
+  try {
+    const res = await fetch('https://dolarapi.com/v1/dolares/bolsa');
+    if (!res.ok) throw new Error('API error');
+    const data = await res.json();
+    if (data && data.venta) {
+      usdRate = parseFloat(data.venta);
+      usdRateVerified = true;
+      persist();
+      renderHero();
+      renderAssets();
+      status.textContent = '● auto';
+      status.style.color = 'var(--green)';
+      setTimeout(() => { status.textContent = ''; }, 4000);
+    }
+  } catch(e) {
+    usdRateVerified = false;
+    status.textContent = '● no verificado';
+    status.style.color = 'var(--orange)';
+    status.title = 'No se pudo obtener el tipo de cambio. Ingresalo manualmente.';
+    renderHero();
+  }
+}
+
+function toggleRateEdit() {
+  rateEditing = !rateEditing;
+  const disp = document.getElementById('rate-display');
+  const inp  = document.getElementById('rate-input');
+  if (rateEditing) {
+    inp.value = usdRate;
+    disp.style.display = 'none';
+    inp.style.display = '';
+    inp.focus(); inp.select();
+  } else {
+    disp.style.display = '';
+    inp.style.display = 'none';
+  }
+}
+
+function saveRate() {
+  const v = parseFloat(document.getElementById('rate-input').value);
+  if (v > 0) {
+    usdRate = v;
+    usdRateVerified = true;
+    const status = document.getElementById('rate-status');
+    status.textContent = '● manual';
+    status.style.color = 'var(--cyan)';
+    setTimeout(() => { status.textContent = ''; }, 3000);
+    persist();
+  }
+  rateEditing = false;
+  document.getElementById('rate-display').style.display = '';
+  document.getElementById('rate-input').style.display = 'none';
+  render();
+}
+
+// ── NUMBER FORMAT (Latin American) ────────────────────────────
+function fmtNum(n, dec) {
+  if (isNaN(n) || n === null || n === undefined) return '0';
+  dec = dec === undefined ? 2 : dec;
+  const neg = n < 0;
+  const abs = Math.abs(n).toFixed(dec);
+  const [intPart, decPart] = abs.split('.');
+  const intFmt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const result = dec > 0 ? intFmt + ',' + decPart : intFmt;
+  return (neg ? '-' : '') + result;
+}
+function fmtUSD(n) { return 'u$s\u00A0' + fmtNum(n, 2); }
+function fmtARS(n) { return '$\u00A0'   + fmtNum(n, 0); }
+
+// ── TOTALS ────────────────────────────────────────────────────
+function safeRate() { return usdRate > 0 ? usdRate : 1; }
+function toARSval(a) {
+  return a.currency === 'USD' ? a.balance * safeRate() : a.balance;
+}
+function totalARS() { return assets.reduce((s, a) => s + toARSval(a), 0); }
+function totalUSD() { return totalARS() / safeRate(); }
+
+// ── RENDER ────────────────────────────────────────────────────
+function render() { renderHero(); renderAssets(); renderSummary(); }
+
+function renderHero() {
+  const usd = totalUSD();
+  const ars = totalARS();
+  if (budgetCurrency === 'ARS') {
+    document.getElementById('hero-label').textContent = 'TOTAL EN PESOS';
+    document.getElementById('hero-usd').textContent = fmtARS(ars);
+    document.getElementById('hero-ars').textContent = fmtUSD(usd);
+  } else {
+    document.getElementById('hero-label').textContent = 'TOTAL EN USD';
+    document.getElementById('hero-usd').textContent = fmtUSD(usd);
+    document.getElementById('hero-ars').textContent = fmtARS(ars);
+  }
+  document.getElementById('rate-display').textContent = '$\u00A0' + fmtNum(usdRate, 0);
+  document.getElementById('rate-display').style.color = usdRateVerified ? 'var(--cyan)' : 'var(--orange)';
+}
+
+function renderAssets() {
+  const list   = document.getElementById('assets-list');
+  const totARS = totalARS();
+
+  if (!assets.length) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <p>Sin activos.</p>
+        <p style="font-size:10px;">Tocá el botón <strong style="color:var(--purple)">+</strong> para agregar tu primer activo.</p>
+      </div>`;
+    document.getElementById('summary-section').style.display = 'none';
+    document.getElementById('target-total-label').textContent = '';
+    return;
+  }
+
+  // Target % total
+  const totTarget = assets.reduce((s, a) => s + (a.targetPct || 0), 0);
+  const tEl = document.getElementById('target-total-label');
+  if (assets.length >= 2) {
+    tEl.textContent = 'Total objetivo: ' + fmtNum(totTarget, 1) + '%';
+    tEl.className = 'target-indicator ' + (Math.abs(totTarget - 100) < 0.5 ? 'target-ok' : 'target-warn');
+  } else {
+    tEl.textContent = '';
+  }
+
+  const typeLabels = { Crypto:'Crypto', Stock:'Acción', ETF:'ETF', FCI:'FCI', Bond:'Bono', Cash:'Efectivo', Other:'Otro' };
+  const badgeMap   = { Crypto:'badge-crypto', Stock:'badge-stock', ETF:'badge-etf', FCI:'badge-fci', Bond:'badge-bond', Cash:'badge-cash', Other:'badge-other' };
+
+  // ── Deficit-proportionate aporte ─────────────────────────────
+  // If targets set → distribute proportionally to deficit (underweight assets only)
+  // If no targets set → distribute equally across all assets
+  const budARS = budgetInARS();
+  const realPcts = assets.map(a => totARS > 0 ? (toARSval(a) / totARS) * 100 : 0);
+  const hasTargets = assets.some(a => (a.targetPct || 0) > 0);
+  let aportes;
+
+  if (hasTargets) {
+    const deficits = assets.map((a, i) => Math.max((a.targetPct || 0) - realPcts[i], 0));
+    const totalDeficit = deficits.reduce((s, d) => s + d, 0);
+    aportes = deficits.map(d => totalDeficit > 0 ? budARS * (d / totalDeficit) : 0);
+    // fallback: if all assets are perfectly balanced, distribute by target %
+    if (totalDeficit === 0) {
+      const totalTarget = assets.reduce((s, a) => s + (a.targetPct || 0), 0);
+      aportes = assets.map(a => totalTarget > 0 ? budARS * ((a.targetPct || 0) / totalTarget) : budARS / assets.length);
+    }
+  } else {
+    // No targets set — split equally
+    aportes = assets.map(() => budARS / assets.length);
+  }
+  // Fix float rounding — assign remainder to last non-zero aporte
+  const aporteSum  = aportes.reduce((s, a) => s + a, 0);
+  const roundingDiff = budARS - aporteSum;
+  if (Math.abs(roundingDiff) > 0 && aportes.length) {
+    const lastNonZero = aportes.map((a, i) => a > 0 ? i : -1).filter(i => i >= 0).pop();
+    if (lastNonZero !== undefined) aportes[lastNonZero] += roundingDiff;
+  }
+
+  list.innerHTML = assets.map((a, i) => {
+    const arsVal  = toARSval(a);
+    const realPct = realPcts[i];
+    const objPct  = a.targetPct || 0;
+    const diff    = realPct - objPct;
+    const pctCls  = Math.abs(diff) <= 3 ? 'pct-ok' : Math.abs(diff) <= 8 ? 'pct-under' : diff > 0 ? 'pct-over' : 'pct-under';
+    const dispVal = a.currency === 'USD' ? fmtUSD(a.balance) : fmtARS(a.balance);
+    const rebal   = totARS * (objPct / 100) - arsVal;
+    const rebalHtml = rebal >= 0
+      ? `<span style="color:var(--green)">+${fmtARS(rebal)}</span>`
+      : `<span style="color:var(--red)">${fmtARS(rebal)}</span>`;
+    const rebalSection = showRebalanceo
+      ? `<span style="color:var(--muted);">Rebalanceo: ${rebalHtml}</span>`
+      : '';
+    const aporte = aportes[i];
+    const aporteDisplay = budgetCurrency === 'USD'
+      ? fmtUSD(Math.round(aporte / safeRate() * 100) / 100)
+      : fmtARS(aporte);
+    const aporteHtml = budARS > 0
+      ? (aporte > 0
+          ? `<span style="color:var(--cyan)">${aporteDisplay}</span>`
+          : `<span style="color:var(--muted)">— <span style="color:var(--orange);font-size:8px;">Sobreasignado</span></span>`)
+      : `<span style="color:var(--muted)">—</span>`;
+    const badge = badgeMap[a.type] || 'badge-other';
+    const label = typeLabels[a.type] || a.type;
+
+    return `
+    <div class="asset-row" onclick="openModal('${esc(a.id)}')">
+      <div class="asset-left">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span class="asset-name">${esc(a.name)}</span>
+          <span class="badge ${badge}">${label}</span>
+        </div>
+        ${a.broker ? `<div class="asset-broker">${esc(a.broker)}</div>` : ''}
+        <div style="display:flex;gap:10px;margin-top:5px;font-size:9px;flex-wrap:wrap;">
+          ${rebalSection}
+          <span style="color:var(--muted);">Aporte: ${aporteHtml}</span>
+        </div>
+      </div>
+      <div class="asset-right">
+        <div class="asset-val">${dispVal}</div>
+        <div class="asset-pct-row">
+          <span class="pct-obj">obj&nbsp;${fmtNum(objPct,1)}%</span>
+          <span class="${pctCls}">${a.balance === 0 ? '—' : fmtNum(realPct,1)+'%'}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderSummary() {
+  if (!assets.length) return;
+  const totARS = totalARS();
+  const budARS = budgetInARS();
+
+  // Total deficit — sum of all underweight assets in ARS
+  let deficitTotal = 0;
+  assets.forEach(a => {
+    const r = totARS * ((a.targetPct||0)/100) - toARSval(a);
+    if (r > 0) deficitTotal += r;
+  });
+
+  // Total a rebalancear + gap — only show when rebalanceo toggle is ON
+  const rebalRow = document.getElementById('summary-rebalance-row');
+  const gapEl    = document.getElementById('summary-gap');
+  const secEl    = document.getElementById('summary-section');
+
+  if (!showRebalanceo) {
+    if (secEl)    secEl.style.display    = 'none';
+    if (rebalRow) rebalRow.style.display = 'none';
+    if (gapEl)    gapEl.style.display   = 'none';
+    return;
+  }
+
+  if (secEl)    secEl.style.display    = 'block';
+  if (rebalRow) rebalRow.style.display = '';
+
+  const deficitDisplay = budgetCurrency === 'USD'
+    ? fmtUSD(deficitTotal / safeRate())
+    : fmtARS(deficitTotal);
+  const aprtEl = document.getElementById('summary-aporte');
+  if (aprtEl) aprtEl.innerHTML = `<span style="color:var(--cyan)">${deficitDisplay}</span>`;
+
+  // Static rebalancing context note
+  if (gapEl) {
+    if (showRebalanceo && deficitTotal > 0) {
+      gapEl.innerHTML = `<span style="color:var(--muted)">Mové fondos de activos sobreasignados a subasignados para rebalancear.</span>`;
+      gapEl.style.display = 'block';
+    } else {
+      gapEl.style.display = 'none';
+    }
+  }
+}
+
+// ── MODAL ─────────────────────────────────────────────────────
+function openModal(id) {
+  editingId = id || null;
+  const title  = document.getElementById('modal-title');
+  const delBtn = document.getElementById('btn-delete');
+
+  if (editingId) {
+    const a = assets.find(x => x.id === id);
+    if (!a) return;
+    title.textContent = '✎ Editar activo';
+    delBtn.style.display = '';
+    document.getElementById('f-name').value    = a.name;
+    document.getElementById('f-type').value    = a.type;
+    document.getElementById('f-broker').value  = a.broker || '';
+    document.getElementById('f-balance').value = a.balance;
+    document.getElementById('f-currency').value= a.currency;
+    document.getElementById('f-target').value  = a.targetPct || '';
+  } else {
+    title.textContent = '+ Agregar activo';
+    delBtn.style.display = 'none';
+    document.getElementById('f-name').value     = '';
+    document.getElementById('f-type').selectedIndex = 0;
+    document.getElementById('f-broker').value   = '';
+    document.getElementById('f-balance').value  = '';
+    document.getElementById('f-currency').selectedIndex = 0;
+    document.getElementById('f-target').value   = '';
+  }
+
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(() => document.getElementById('f-name').focus(), 250);
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open');
+  editingId = null;
+}
+
+function onOverlayClick(e) {
+  if (e.target === document.getElementById('overlay')) {
+    closeConfirm();
+    closeModal();
+  }
+}
+
+function saveAsset() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) {
+    document.getElementById('f-name').style.borderColor = 'var(--red)';
+    document.getElementById('f-name').focus();
+    setTimeout(() => document.getElementById('f-name').style.borderColor = '', 1500);
+    return;
+  }
+  const asset = {
+    id:        editingId || uid(),
+    name,
+    type:      document.getElementById('f-type').value,
+    broker:    document.getElementById('f-broker').value.trim(),
+    balance:   Math.max(parseFloat(document.getElementById('f-balance').value) || 0, 0),
+    currency:  document.getElementById('f-currency').value,
+    targetPct: Math.min(Math.max(parseFloat(document.getElementById('f-target').value) || 0, 0), 100),
+    updatedAt: new Date().toISOString(),
+  };
+  if (editingId) {
+    const idx = assets.findIndex(a => a.id === editingId);
+    if (idx >= 0) assets[idx] = asset;
+  } else {
+    assets.push(asset);
+  }
+  const wasEditing = !!editingId;
+  updateStreak();
+  persist();
+  closeModal();
+  render();
+  showToast(wasEditing ? 'Activo actualizado.' : 'Activo agregado.');
+}
+
+function confirmDelete() {
+  const a = assets.find(x => x.id === editingId);
+  if (!a) return;
+  document.getElementById('confirm-msg').textContent =
+    `¿Eliminar "${a.name}"? Esta acción no se puede deshacer.`;
+  pendingDeleteFn = deleteAsset;
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+
+function closeConfirm() {
+  document.getElementById('confirm-overlay').classList.remove('open');
+}
+
+function deleteAsset() {
+  const name = assets.find(a => a.id === editingId)?.name || 'Activo';
+  assets = assets.filter(a => a.id !== editingId);
+  persist();
+  closeConfirm();
+  closeModal();
+  render();
+  showToast(`${name} eliminado.`);
+}
+
+// ── BUDGET ────────────────────────────────────────────────────
+function onBudgetChange() {
+  budget = parseFloat(document.getElementById('budget-input').value) || 0;
+  persist();
+  render();
+}
+
+function setBudgetCurrency(cur) {
+  if (cur === budgetCurrency) return;
+  const live = parseFloat(document.getElementById('budget-input').value) || 0;
+  // Convert existing input value to new currency
+  if (live > 0) {
+    const converted = cur === 'USD'
+      ? live / safeRate()        // ARS → USD
+      : live * safeRate();       // USD → ARS
+    document.getElementById('budget-input').value = parseFloat(converted.toFixed(2));
+    budget = converted;
+  }
+  budgetCurrency = cur;
+  applyBudgetCurrencyUI();
+  persist();
+  render();
+}
+
+function applyBudgetCurrencyUI() {
+  document.getElementById('btn-ars').className = budgetCurrency === 'ARS' ? 'active' : '';
+  document.getElementById('btn-usd').className = budgetCurrency === 'USD' ? 'active' : '';
+  document.getElementById('budget-input').placeholder = budgetCurrency === 'ARS' ? '$ 0' : 'u$s 0';
+  document.getElementById('budget-input').step = budgetCurrency === 'ARS' ? '1' : '0.01';
+}
+
+function toggleRebalanceo() {
+  showRebalanceo = !showRebalanceo;
+  applyRebalanceoUI();
+  persist();
+  render();
+}
+
+function applyRebalanceoUI() {
+  const pill = document.getElementById('rebal-pill');
+  if (pill) pill.className = 'toggle-pill' + (showRebalanceo ? ' on' : '');
+}
+
+// Returns budget always in ARS for calculations
+function budgetInARS() {
+  const live = parseFloat(document.getElementById('budget-input')?.value) || budget;
+  return budgetCurrency === 'USD' ? live * safeRate() : live;
+}
+
+// ── STREAK ────────────────────────────────────────────────────
+function updateStreak() {
+  try {
+    const raw = localStorage.getItem(SK.streak);
+    let s = raw ? JSON.parse(raw) : { count: 0, lastMonth: null };
+    const now = new Date();
+    const thisMonth = `${now.getFullYear()}-${now.getMonth()}`;
+    if (s.lastMonth !== thisMonth) {
+      const prevParts = s.lastMonth ? s.lastMonth.split('-').map(Number) : null;
+      let consecutive = false;
+      if (prevParts) {
+        const diff = (now.getFullYear() - prevParts[0]) * 12 + (now.getMonth() - prevParts[1]);
+        consecutive = diff === 1;
+      }
+      s.count = consecutive ? s.count + 1 : 1;
+      s.lastMonth = thisMonth;
+      localStorage.setItem(SK.streak, JSON.stringify(s));
+    }
+    document.getElementById('streak-badge').textContent =
+      `🔥 ${s.count} ${s.count === 1 ? 'mes' : 'meses'}`;
+    document.getElementById('streak-badge').style.display = '';
+  } catch(e) {}
+}
+
+function loadStreak() {
+  try {
+    const raw = localStorage.getItem(SK.streak);
+    const badge = document.getElementById('streak-badge');
+    if (raw) {
+      const s = JSON.parse(raw);
+      badge.textContent = `🔥 ${s.count} ${s.count === 1 ? 'mes' : 'meses'}`;
+      badge.style.display = '';
+    } else {
+      badge.style.display = 'none';
+    }
+  } catch(e) {}
+}
+
+// ── GOALS STATE ───────────────────────────────────────────────
+let goals = [];
+let editingGoalId = null;
+let currentTab = 'portfolio';
+let pendingDeleteFn = null;
+
+// extend SK
+SK.goals = 'habito_goals';
+
+// load goals from storage
+function loadGoals() {
+  try {
+    const g = localStorage.getItem(SK.goals);
+    if (g) goals = JSON.parse(g);
+  } catch(e) {}
+}
+
+function persistGoals() {
+  try { localStorage.setItem(SK.goals, JSON.stringify(goals)); } catch(e) {}
+}
+
+// ── TAB SWITCHING ─────────────────────────────────────────────
+function switchTab(tab) {
+  currentTab = tab;
+  const portfolio = document.querySelector('.scroll-area');
+  const goalsTab  = document.getElementById('tab-goals');
+  const aiTab     = document.getElementById('tab-ai');
+  const fab       = document.getElementById('fab-btn');
+
+  // hide all
+  portfolio.style.display = 'none';
+  goalsTab.style.display  = 'none';
+  aiTab.style.display     = 'none';
+
+  // show active
+  if (tab === 'portfolio') {
+    portfolio.style.display = 'block';
+    fab.style.display = 'flex';
+    fab.title = 'Agregar activo';
+  } else if (tab === 'goals') {
+    goalsTab.style.display = 'block';
+    fab.style.display = 'flex';
+    fab.title = 'Agregar objetivo';
+    renderGoals();
+  } else if (tab === 'ai') {
+    aiTab.style.display = 'block';
+    fab.style.display = 'none';
+  }
+
+  // update nav
+  ['portfolio','goals','ai'].forEach(t => {
+    const el = document.getElementById('nav-' + t);
+    if (!el) return;
+    el.className = 'nav-item ' + (t === tab ? 'active' : 'inactive');
+    const ind = el.querySelector('.nav-indicator');
+    if (t === tab && !ind) {
+      const d = document.createElement('div');
+      d.className = 'nav-indicator';
+      el.appendChild(d);
+    } else if (t !== tab && ind) {
+      ind.remove();
+    }
+  });
+}
+
+function onFabClick() {
+  if (currentTab === 'portfolio') openModal(null);
+  else if (currentTab === 'goals') openGoalModal(null);
+}
+
+// ── GOALS RENDER ──────────────────────────────────────────────
+function renderGoals() {
+  const list  = document.getElementById('goals-list');
+  const empty = document.getElementById('goals-empty');
+  const tab   = document.getElementById('tab-goals');
+  empty.style.display = 'none';
+  list.innerHTML = '';
+  if (!goals.length) {
+    empty.style.display = 'block';
+    return;
+  }
+
+  const sorted = [...goals].sort((a, b) => {
+    const pctA = a.target > 0 ? (a.current / a.target) : 0;
+    const pctB = b.target > 0 ? (b.current / b.target) : 0;
+    return pctB - pctA;
+  });
+
+  list.innerHTML = sorted.map(g => {
+    const pct     = g.target > 0 ? Math.min((g.current / g.target) * 100, 100) : 0;
+    const remaining = Math.max(g.target - g.current, 0);
+    const monthly = g.monthly || 0;
+    const col     = pct >= 80 ? 'var(--green)' : pct >= 40 ? 'var(--purple)' : 'var(--orange)';
+    const dispCur = g.currency === 'USD' ? fmtUSD : fmtARS;
+
+    // ETA — monthly contribution assumed in same currency as goal
+    let etaHtml = '';
+    if (pct >= 100) {
+      etaHtml = `<div class="goal-eta">✅ Objetivo alcanzado.</div>`;
+    } else if (monthly <= 0) {
+      etaHtml = `<div class="goal-eta">Definí un aporte mensual para ver una proyección.</div>`;
+    } else {
+      const months = Math.ceil(remaining / monthly);
+      if (months > 600) {
+        etaHtml = `<div class="goal-eta">A este ritmo, el objetivo está muy lejos. Considerá aumentar el aporte mensual.</div>`;
+      } else {
+        const years = Math.floor(months / 12);
+        const remMonths = months % 12;
+        const etaStr = years > 0
+          ? `${years} año${years > 1 ? 's' : ''}${remMonths > 0 ? ` y ${remMonths} mes${remMonths > 1 ? 'es' : ''}` : ''}`
+          : `${months} ${months === 1 ? 'mes' : 'meses'}`;
+        etaHtml = `<div class="goal-eta">A este ritmo, alcanzás tu objetivo en <span>${etaStr}</span>.</div>`;
+      }
+    }
+
+    return `
+    <div class="goal-card" onclick="openGoalModal('${esc(g.id)}')">
+      <div class="goal-header">
+        <div class="goal-title">
+          <span class="goal-emoji">${esc(g.emoji || '🎯')}</span>
+          <span class="goal-name">${esc(g.name)}</span>
+        </div>
+        <span class="goal-pct" style="color:${col}">${fmtNum(pct, 0)}%</span>
+      </div>
+      <div class="goal-progress-track">
+        <div class="goal-progress-fill" style="width:${pct}%;background:${col};"></div>
+      </div>
+      <div class="goal-meta">
+        <span>${dispCur(g.current)} ahorrados</span>
+        <span>meta: ${dispCur(g.target)}</span>
+        <span style="color:${col}">faltan: ${dispCur(remaining)}</span>
+      </div>
+      ${etaHtml}
+    </div>`;
+  }).join('');
+  // Scroll to top so user sees updated state
+  if (tab) tab.scrollTop = 0;
+}
+
+// ── GOAL MODAL ────────────────────────────────────────────────
+function openGoalModal(id) {
+  editingGoalId = id || null;
+  const title  = document.getElementById('goal-modal-title');
+  const delBtn = document.getElementById('g-btn-delete');
+
+  if (editingGoalId) {
+    const g = goals.find(x => x.id === id);
+    if (!g) return;
+    title.textContent = '✎ Editar objetivo';
+    delBtn.style.display = '';
+    document.getElementById('g-emoji').value   = g.emoji || '';
+    document.getElementById('g-name').value    = g.name;
+    document.getElementById('g-target').value  = g.target;
+    document.getElementById('g-current').value = g.current;
+    document.getElementById('g-currency').value= g.currency;
+    document.getElementById('g-monthly').value = g.monthly || '';
+  } else {
+    title.textContent = '🎯 Agregar objetivo';
+    delBtn.style.display = 'none';
+    ['g-emoji','g-name','g-target','g-current','g-monthly'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('g-currency').value = 'USD';
+  }
+
+  document.getElementById('goal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('g-name').focus(), 250);
+}
+
+function closeGoalModal() {
+  document.getElementById('goal-overlay').classList.remove('open');
+  editingGoalId = null;
+}
+
+function onGoalOverlayClick(e) {
+  if (e.target === document.getElementById('goal-overlay')) closeGoalModal();
+}
+
+function saveGoal() {
+  const name   = document.getElementById('g-name').value.trim();
+  const target = parseFloat(document.getElementById('g-target').value) || 0;
+
+  if (!name) {
+    document.getElementById('g-name').style.borderColor = 'var(--red)';
+    document.getElementById('g-name').focus();
+    setTimeout(() => document.getElementById('g-name').style.borderColor = '', 1500);
+    return;
+  }
+  if (target <= 0) {
+    document.getElementById('g-target').style.borderColor = 'var(--red)';
+    document.getElementById('g-target').focus();
+    setTimeout(() => document.getElementById('g-target').style.borderColor = '', 1500);
+    return;
+  }
+  const goal = {
+    id:        editingGoalId || uid(),
+    emoji:     document.getElementById('g-emoji').value.trim() || '🎯',
+    name,
+    target,
+    current:   Math.min(Math.max(parseFloat(document.getElementById('g-current').value) || 0, 0), target),
+    currency:  document.getElementById('g-currency').value,
+    monthly:   Math.max(parseFloat(document.getElementById('g-monthly').value) || 0, 0),
+    createdAt: editingGoalId
+      ? (goals.find(g => g.id === editingGoalId)?.createdAt || new Date().toISOString())
+      : new Date().toISOString(),
+  };
+  if (editingGoalId) {
+    const idx = goals.findIndex(g => g.id === editingGoalId);
+    if (idx >= 0) goals[idx] = goal;
+  } else {
+    goals.push(goal);
+  }
+  const wasEditing = !!editingGoalId;
+  persistGoals();
+  closeGoalModal();
+  renderGoals();
+  showToast(wasEditing ? 'Objetivo actualizado.' : 'Objetivo agregado.');
+}
+
+function confirmGoalDelete() {
+  const g = goals.find(x => x.id === editingGoalId);
+  if (!g) return;
+  document.getElementById('confirm-msg').textContent =
+    `¿Eliminar el objetivo "${g.name}"? Esta acción no se puede deshacer.`;
+  pendingDeleteFn = deleteGoal;
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+
+function deleteGoal() {
+  goals = goals.filter(g => g.id !== editingGoalId);
+  persistGoals();
+  closeConfirm();
+  closeGoalModal();
+  renderGoals();
+}
+
+// ── CONFIRM (shared) ──────────────────────────────────────────
+function confirmDeleteAction() {
+  if (pendingDeleteFn) pendingDeleteFn();
+  pendingDeleteFn = null;
+}
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ── ADVISOR IA ────────────────────────────────────────────────
+const QUESTIONS = [
+  { id:'horizon', text:'¿A qué plazo querés invertir tus ahorros?', options:['1 año','3 años','5 años','10+ años'] },
+  { id:'risk',    text:'¿Cómo definirías tu tolerancia al riesgo?', options:['🛡️ Conservador — prefiero no perder','⚖️ Moderado — acepto algo de riesgo','🚀 Agresivo — busco máximo rendimiento'] },
+  { id:'monthly', text:'¿Cuánto podés ahorrar por mes aproximadamente?', options:['Menos de u$s 500','u$s 500 – 2.000','u$s 2.000 – 5.000','Más de u$s 5.000'] },
+];
+
+const QUESTION_ACCOUNTS = {
+  id: 'accounts',
+  text: '¿Con qué tipo de cuenta contás para invertir? Podés elegir más de una.',
+  options: ['🏦 Banco tradicional','📱 Fintech','📈 Broker','🌐 Exchange de cripto','Ninguna todavía'],
+};
+
+let aiProfile = {}, aiHistory = [], aiPhase = 'idle';
+let aiEmptyPortfolio = false;
+
+function startAdvisor() {
+  aiEmptyPortfolio = !assets.length;
+  aiProfile  = {};
+  aiHistory  = [];
+  aiPhase    = 'interview';
+  document.getElementById('ai-idle').style.display    = 'none';
+  document.getElementById('ai-session').style.display = 'block';
+  document.getElementById('ai-messages').innerHTML    = '';
+  document.getElementById('ai-options').innerHTML     = '';
+  document.getElementById('ai-restart').style.display = 'none';
+  askQuestion(0);
+}
+
+function askQuestion(idx) {
+  const q = QUESTIONS[idx];
+  showAiMsg(q.text, false);
+  showOptions(q.options, chosen => {
+    aiProfile[q.id] = chosen;
+    showAiMsg(chosen, true);
+    const next = idx + 1;
+    if (next < QUESTIONS.length) {
+      setTimeout(() => askQuestion(next), 400);
+    } else if (aiEmptyPortfolio) {
+      setTimeout(() => askAccountsQuestion(), 400);
+    } else {
+      setTimeout(() => runAnalysis(), 400);
+    }
+  });
+}
+
+function askAccountsQuestion() {
+  multiSelectChosen = [];
+  showAiMsg(QUESTION_ACCOUNTS.text, false);
+  showMultiSelect(QUESTION_ACCOUNTS.options, chosen => {
+    aiProfile.accounts = chosen;
+    showAiMsg(chosen.join(', '), true);
+    setTimeout(() => runStarterRecommendation(), 400);
+  });
+}
+
+async function runStarterRecommendation() {
+  aiPhase = 'analysis';
+  showOptions([], null);
+  showAiMsg('Preparando tu recomendación inicial<span class="ai-dots"></span>', false, true);
+  const sys = `Sos un advisor financiero directo para inversores latinoamericanos principiantes. Respondés en español sin jerga. Máximo 250 palabras. Sin emojis en el análisis.
+Perfil del inversor: horizonte ${aiProfile.horizon}, riesgo ${aiProfile.risk}, ahorro mensual ${aiProfile.monthly}, cuentas disponibles: ${aiProfile.accounts?.join(', ') || 'no especificado'}.
+El inversor NO tiene ningún activo todavía. Tu tarea es sugerirle un portafolio inicial concreto y simple, adaptado a su perfil y a las cuentas que tiene disponibles. Sé específico sobre qué tipo de activos considerar (FCIs, CEDEARs, stablecoins, etc.) y en qué proporción aproximada. No menciones plataformas específicas.`;
+  await callAI(sys, 'No tengo ninguna inversión todavía. ¿Por dónde empiezo?');
+  showStarterFollowupOptions();
+}
+
+async function runAnalysis() {
+  aiPhase = 'analysis';
+  showOptions([], null);
+  showAiMsg('Analizando tu portafolio<span class="ai-dots"></span>', false, true);
+  const ctx = buildPortfolioContext();
+  const sys = `Sos un advisor financiero directo para inversores latinoamericanos principiantes. Respondés en español sin jerga. Máximo 200 palabras. Sin emojis en el análisis.\nPerfil: horizonte ${aiProfile.horizon}, riesgo ${aiProfile.risk}, ahorro mensual ${aiProfile.monthly}.\nPortafolio:\n${ctx}\nTipo de cambio: $${fmtNum(usdRate,0)} ARS/USD.`;
+  await callAI(sys, 'Analizá mi portafolio y decime si está alineado con mi perfil. Indicá qué ajustar si hace falta.');
+  showFollowupOptions();
+}
+
+function showStarterFollowupOptions() {
+  showOptions([
+    '¿Cómo empiezo a invertir paso a paso?',
+    '¿Qué porcentaje pongo en cada activo?',
+    '¿Qué riesgos tengo que considerar?',
+    '¿Cuándo debería revisar mi portafolio?',
+  ], chosen => askFollowup(chosen));
+  document.getElementById('ai-restart').style.display = 'block';
+}
+
+async function askFollowup(q) {
+  showAiMsg(q, true);
+  showOptions([], null);
+  showAiMsg('Consultando<span class="ai-dots"></span>', false, true);
+  const ctx = buildPortfolioContext();
+  const sys = `Sos un advisor financiero directo para inversores latinoamericanos principiantes. Respondés en español sin jerga. Máximo 150 palabras.\nPerfil: horizonte ${aiProfile.horizon}, riesgo ${aiProfile.risk}.\n${ctx ? 'Portafolio:\n' + ctx : 'El inversor no tiene activos aún.'}`;
+  aiHistory.push({ role:'user', content: q });
+  await callAI(sys, null);
+  if (aiEmptyPortfolio) {
+    showStarterFollowupOptions();
+  } else {
+    showFollowupOptions();
+  }
+}
+
+async function callAI(system, userMsg) {
+  const messages = userMsg
+    ? [...aiHistory, { role:'user', content: userMsg }]
+    : aiHistory.length ? aiHistory : [{ role:'user', content: 'Continuá con el análisis.' }];
+  try {
+    const res  = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:1000, system, messages }),
+    });
+    const data = await res.json();
+    const text = data.content?.map(b=>b.text||'').join('') || 'Sin respuesta.';
+    removeLoadingMsg();
+    showAiMsg(text, false);
+    aiHistory.push({ role:'assistant', content: text });
+  } catch(e) {
+    removeLoadingMsg();
+    showAiMsg('Error al conectar con el advisor. Intentá de nuevo.', false);
+  }
+  document.getElementById('ai-restart').style.display = 'block';
+}
+
+function buildPortfolioContext() {
+  const tot = totalARS();
+  return assets.map(a => {
+    const real   = tot > 0 ? ((toARSval(a)/tot)*100).toFixed(1) : '0';
+    const broker = a.broker ? ` (${a.broker})` : '';
+    return `- ${a.name}${broker}: ${a.currency==='USD'?fmtUSD(a.balance):fmtARS(a.balance)} | Obj ${a.targetPct}% | Real ${real}%`;
+  }).join('\n');
+}
+
+function showFollowupOptions() {
+  showOptions([
+    '¿Cómo reduzco el riesgo?',
+    '¿Qué activo agregar este mes?',
+    '¿Estoy bien diversificado?',
+    '¿Qué pasa si hay volatilidad en Argentina?',
+  ], chosen => askFollowup(chosen));
+}
+
+function showAiMsg(text, isUser, isLoading) {
+  const wrap = document.getElementById('ai-messages');
+  const div  = document.createElement('div');
+  div.className = 'ai-msg' + (isUser ? ' ai-user' : '');
+  if (isLoading) div.dataset.loading = '1';
+  if (!isUser) {
+    const lbl = document.createElement('div');
+    lbl.className   = 'ai-msg-label';
+    lbl.textContent = 'ADVISOR';
+    div.appendChild(lbl);
+  }
+  const txt = document.createElement('div');
+  if (isUser) {
+    txt.textContent = text; // plain text for user input — no XSS risk
+  } else {
+    txt.innerHTML = text.replace(/\n/g,'<br>'); // AI/system text — safe
+  }
+  div.appendChild(txt);
+  wrap.appendChild(div);
+  div.scrollIntoView({ behavior:'smooth', block:'end' });
+}
+
+function removeLoadingMsg() {
+  const el = document.querySelector('[data-loading="1"]');
+  if (el) el.remove();
+}
+
+function showOptions(opts, cb) {
+  const wrap = document.getElementById('ai-options');
+  wrap.innerHTML = '';
+  if (!opts.length) return;
+  const div = document.createElement('div');
+  div.className = 'ai-options-wrap';
+  opts.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className   = 'ai-opt-btn';
+    btn.textContent = opt;
+    btn.onclick = () => { wrap.innerHTML = ''; if (cb) cb(opt); };
+    div.appendChild(btn);
+  });
+  wrap.appendChild(div);
+  wrap.scrollIntoView({ behavior:'smooth', block:'end' });
+}
+
+function showMultiSelect(opts, cb) {
+  const wrap = document.getElementById('ai-options');
+  wrap.innerHTML = '';
+  const chosen = [];
+  const div = document.createElement('div');
+  div.className = 'ai-options-wrap';
+
+  opts.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'ai-opt-btn';
+    btn.textContent = opt;
+    btn.style.position = 'relative';
+    btn.onclick = () => {
+      const idx = chosen.indexOf(opt);
+      if (idx >= 0) {
+        chosen.splice(idx, 1);
+        btn.style.borderColor = '';
+        btn.style.color = '';
+      } else {
+        chosen.push(opt);
+        btn.style.borderColor = 'var(--purple)';
+        btn.style.color = 'var(--purple)';
+      }
+    };
+    div.appendChild(btn);
+  });
+
+  // Confirm button
+  const confirm = document.createElement('button');
+  confirm.className = 'ai-opt-btn';
+  confirm.textContent = 'Confirmar →';
+  confirm.style.borderColor = 'var(--green)';
+  confirm.style.color = 'var(--green)';
+  confirm.style.marginTop = '4px';
+  confirm.onclick = () => {
+    if (!chosen.length) chosen.push('Ninguna todavía');
+    wrap.innerHTML = '';
+    cb(chosen);
+  };
+  div.appendChild(confirm);
+  wrap.appendChild(div);
+  wrap.scrollIntoView({ behavior:'smooth', block:'end' });
+}
+
+function resetAdvisor() {
+  aiProfile = {}; aiHistory = []; aiPhase = 'idle';
+  aiEmptyPortfolio = false;
+  document.getElementById('ai-idle').style.display    = 'block';
+  document.getElementById('ai-session').style.display = 'none';
+  document.getElementById('ai-messages').innerHTML    = '';
+  document.getElementById('ai-options').innerHTML     = '';
+  document.getElementById('ai-restart').style.display = 'none';
+}
+
+// ── BOOT ──────────────────────────────────────────────────────
+init();
+loadGoals();
+</script>
+</body>
+</html>
