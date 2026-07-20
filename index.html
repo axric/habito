@@ -404,21 +404,24 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
 
 <script>
 // ── STATE ─────────────────────────────────────────────────────
-let assets = [];
-let usdRate = 0;
-let budget = 0;
-let budgetCurrency = 'ARS';
-let showRebalanceo = false;
-let editingId = null;
-let rateEditing = false;
+let assets          = [];
+let usdRate         = 0;
+let usdRateVerified = false;
+let budget          = 0;
+let budgetCurrency  = 'ARS';
+let showRebalanceo  = false;
+let balancesVisible = true;
+let editingId       = null;
+let rateEditing     = false;
 
 const SK = {
-  assets:          'habito_assets',
-  rate:            'habito_usd_rate',
-  budget:          'habito_budget',
-  budgetCurrency:  'habito_budget_currency',
-  rebalanceo:      'habito_rebalanceo',
-  streak:          'habito_streak',
+  assets:         'habito_assets',
+  rate:           'habito_usd_rate',
+  budget:         'habito_budget',
+  budgetCurrency: 'habito_budget_currency',
+  rebalanceo:     'habito_rebalanceo',
+  streak:         'habito_streak',
+  goals:          'habito_goals',
 };
 
 // ── INIT ──────────────────────────────────────────────────────
@@ -456,9 +459,6 @@ function persist() {
     localStorage.setItem(SK.rebalanceo, String(showRebalanceo));
   } catch(e) { console.warn('Storage save error', e); }
 }
-
-// ── MEP RATE ──────────────────────────────────────────────────
-let usdRateVerified = false;
 
 async function fetchUSDRate() {
   const status = document.getElementById('rate-status');
@@ -536,8 +536,12 @@ function fmtNum(n, dec) {
 function fmtUSD(n) { return 'u$s\u00A0' + fmtNum(n, 1); }
 function fmtARS(n) { return '$\u00A0'   + fmtNum(n, 0); }
 
-// ── TOTALS ────────────────────────────────────────────────────
-let balancesVisible = true;
+function safeRate() { return usdRate > 0 ? usdRate : 1; }
+function toARSval(a) {
+  return a.currency === 'USD' ? a.balance * safeRate() : a.balance;
+}
+function totalARS() { return assets.reduce((s, a) => s + toARSval(a), 0); }
+function totalUSD() { return totalARS() / safeRate(); }
 
 function toggleVisibility() {
   balancesVisible = !balancesVisible;
@@ -547,13 +551,6 @@ function toggleVisibility() {
   renderHero();
   renderAssets();
 }
-
-function safeRate() { return usdRate > 0 ? usdRate : 1; }
-function toARSval(a) {
-  return a.currency === 'USD' ? a.balance * safeRate() : a.balance;
-}
-function totalARS() { return assets.reduce((s, a) => s + toARSval(a), 0); }
-function totalUSD() { return totalARS() / safeRate(); }
 
 // ── RENDER ────────────────────────────────────────────────────
 function render() { renderHero(); renderAssets(); }
@@ -881,9 +878,6 @@ let goals = [];
 let editingGoalId = null;
 let currentTab = 'portfolio';
 let pendingDeleteFn = null;
-
-// extend SK
-SK.goals = 'habito_goals';
 
 // load goals from storage
 function loadGoals() {
