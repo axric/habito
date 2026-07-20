@@ -57,6 +57,7 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
 .pct-ok{color:var(--green);}
 .pct-over{color:var(--red);}
 .pct-under{color:var(--orange);}
+.pct-severe{color:var(--red);font-weight:700;}
 
 /* BADGES */
 .badge{display:inline-block;font-size:8px;padding:2px 5px;border-radius:var(--r-sm);font-weight:500;}
@@ -184,7 +185,7 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
         <button id="visibility-btn" onclick="toggleVisibility()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0;line-height:1;opacity:0.6;" title="Mostrar/ocultar saldos">◎</button>
       </div>
       <div class="hero-usd" id="hero-usd">u$s 0</div>
-      <div class="hero-ars" id="hero-ars">$ 0 ARS</div>
+      <div class="hero-ars" id="hero-ars">$ 0</div>
       <div class="rate-row">
         <span class="rate-label">Dólar</span>
         <span class="rate-val" id="rate-display" onclick="toggleRateEdit()"></span>
@@ -404,7 +405,7 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
 <script>
 // ── STATE ─────────────────────────────────────────────────────
 let assets = [];
-let usdRate = 1200;
+let usdRate = 0;
 let budget = 0;
 let budgetCurrency = 'ARS';
 let showRebalanceo = false;
@@ -524,7 +525,7 @@ function saveRate() {
 // ── NUMBER FORMAT (Latin American) ────────────────────────────
 function fmtNum(n, dec) {
   if (isNaN(n) || n === null || n === undefined) return '0';
-  dec = dec === undefined ? 2 : dec;
+  dec = dec === undefined ? 1 : dec;
   const neg = n < 0;
   const abs = Math.abs(n).toFixed(dec);
   const [intPart, decPart] = abs.split('.');
@@ -635,7 +636,7 @@ function renderAssets() {
     const realPct = realPcts[i];
     const objPct  = a.targetPct || 0;
     const diff    = realPct - objPct;
-    const pctCls  = Math.abs(diff) <= 3 ? 'pct-ok' : Math.abs(diff) <= 8 ? 'pct-under' : diff > 0 ? 'pct-over' : 'pct-under';
+    const pctCls  = Math.abs(diff) <= 3 ? 'pct-ok' : diff > 8 ? 'pct-over' : diff < -8 ? 'pct-under pct-severe' : 'pct-under';
     const dispVal = balancesVisible
       ? (a.currency === 'USD' ? fmtUSD(a.balance) : fmtARS(a.balance))
       : '•••';
