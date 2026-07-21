@@ -17,14 +17,10 @@
 }
 html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins',sans-serif;font-size:12px;overflow:hidden;}
 #app{display:flex;flex-direction:column;height:100vh;max-width:430px;margin:0 auto;position:relative;background:var(--bg);}
-
-/* HEADER */
 .header{padding:14px 16px 10px;background:var(--bg);border-bottom:1px solid var(--selection);flex-shrink:0;}
 .header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
 .app-name{font-size:13px;font-weight:700;color:var(--fg);}
 .streak-badge{background:rgba(189,147,249,0.15);border:1px solid var(--purple);border-radius:var(--r-sm);padding:3px 8px;font-size:10px;color:var(--purple);font-weight:500;}
-
-/* HERO CARD */
 .hero-card{background:var(--bg-dark);border:1px solid var(--selection);border-radius:var(--r-lg);padding:14px 16px;}
 .hero-label{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;}
 .hero-usd{font-size:34px;font-weight:700;color:var(--fg);line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -34,17 +30,11 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
 .rate-val{font-size:11px;font-weight:700;color:var(--cyan);cursor:pointer;}
 .rate-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:0;line-height:1;}
 .rate-input{background:var(--bg-darker);border:1px solid var(--cyan);border-radius:var(--r-sm);color:var(--fg);font-family:'Poppins',sans-serif;font-size:11px;font-weight:700;padding:3px 7px;width:90px;outline:none;}
-
-/* SCROLL AREA */
 .scroll-area{flex:1;overflow-y:auto;padding:12px 16px 140px;-webkit-overflow-scrolling:touch;}
 .scroll-area::-webkit-scrollbar{width:3px;}
 .scroll-area::-webkit-scrollbar-track{background:transparent;}
 .scroll-area::-webkit-scrollbar-thumb{background:var(--selection);border-radius:2px;}
-
-/* SECTION LABEL */
 .section-label{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;}
-
-/* ASSET ROW */
 .asset-row{background:var(--bg-dark);border:1px solid var(--selection);border-radius:var(--r-md);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;transition:border-color .15s;}
 .asset-row:hover,.asset-row:active{border-color:var(--purple);}
 .asset-left{flex:1;min-width:0;}
@@ -58,8 +48,6 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
 .pct-over{color:var(--red);}
 .pct-under{color:var(--orange);}
 .pct-severe{color:var(--red);font-weight:700;}
-
-/* BADGES */
 .badge{display:inline-block;font-size:8px;padding:2px 5px;border-radius:var(--r-sm);font-weight:500;}
 .badge-stock{background:rgba(139,233,253,0.12);color:var(--cyan);border:1px solid rgba(139,233,253,0.3);}
 .badge-crypto{background:rgba(189,147,249,0.12);color:var(--purple);border:1px solid rgba(189,147,249,0.3);}
@@ -68,13 +56,9 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
 .badge-fci{background:rgba(255,184,108,0.12);color:var(--orange);border:1px solid rgba(255,184,108,0.3);}
 .badge-cash{background:rgba(98,114,164,0.12);color:var(--muted);border:1px solid rgba(98,114,164,0.3);}
 .badge-other{background:rgba(98,114,164,0.12);color:var(--muted);border:1px solid rgba(98,114,164,0.3);}
-
-/* SUMMARY */
 .summary-row{background:var(--bg-dark);border:1px solid var(--selection);border-radius:var(--r-md);padding:10px 12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
 .summary-label{font-size:9px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase;}
 .summary-val{font-size:12px;font-weight:700;}
-
-/* BUDGET */
 .budget-row{background:var(--bg-darker);border:1px solid var(--selection);border-radius:var(--r-md);padding:8px 12px;display:flex;align-items:center;gap:8px;margin-bottom:12px;}
 .budget-label{font-size:10px;color:var(--muted);white-space:nowrap;}
 .budget-input{background:none;border:none;color:var(--fg);font-family:'Poppins',sans-serif;font-size:12px;font-weight:700;outline:none;flex:1;min-width:0;}
@@ -83,30 +67,21 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
 .budget-currency-toggle button{background:none;border:none;color:var(--muted);font-family:'Poppins',sans-serif;font-size:9px;font-weight:700;padding:3px 7px;cursor:pointer;transition:all .15s;}
 .budget-currency-toggle button.active{background:var(--purple);color:var(--bg);}
 .budget-currency-toggle button:not(.active):hover{color:var(--fg);}
-
-/* EMPTY STATE */
 .empty-state{text-align:center;padding:40px 16px;color:var(--muted);}
 .empty-state p{margin-bottom:6px;line-height:1.6;}
-
-/* REBALANCEO TOGGLE */
 .rebal-toggle{display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none;}
 .rebal-toggle-label{font-size:9px;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase;}
 .toggle-pill{width:28px;height:15px;border-radius:var(--r-full);background:var(--selection);position:relative;transition:background .2s;flex-shrink:0;}
 .toggle-pill.on{background:var(--purple);}
 .toggle-pill::after{content:'';position:absolute;top:2px;left:2px;width:11px;height:11px;border-radius:50%;background:var(--fg);transition:transform .2s;}
 .toggle-pill.on::after{transform:translateX(13px);}
-/* TARGET INDICATOR */
 .target-indicator{font-size:9px;color:var(--muted);}
 .target-ok{color:var(--green);}
 .target-warn{color:var(--orange);}
-
-/* FAB */
 .fab{position:fixed;bottom:76px;right:16px;width:44px;height:44px;border-radius:var(--r-full);background:var(--purple);border:none;color:var(--bg);font-size:24px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(189,147,249,0.35);transition:transform .15s,box-shadow .15s;z-index:49;}
 .fab:hover{box-shadow:0 6px 20px rgba(189,147,249,0.5);}
 .fab:active{transform:scale(.93);}
 @media(min-width:430px){.fab{right:calc(50% - 215px + 16px);}}
-
-/* BOTTOM NAV */
 .nav{position:fixed;bottom:8px;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:398px;background:var(--bg-darker);border:1px solid var(--selection);border-radius:var(--r-xl);height:56px;display:flex;align-items:center;z-index:50;}
 .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:6px 0;position:relative;}
 .nav-icon{font-size:16px;line-height:1;}
@@ -114,8 +89,6 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
 .nav-item.active .nav-label{color:var(--purple);}
 .nav-item.inactive .nav-label{color:var(--muted);}
 .nav-indicator{position:absolute;bottom:-2px;width:32px;height:3px;background:var(--purple);border-radius:2px 2px 0 0;}
-
-/* MODAL */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:flex-end;justify-content:center;z-index:100;opacity:0;pointer-events:none;transition:opacity .2s;}
 .overlay.open{opacity:1;pointer-events:all;}
 .modal{background:var(--bg-dark);border:1px solid var(--selection);border-top:1px solid var(--purple);border-radius:var(--r-xl) var(--r-xl) 0 0;padding:20px;width:100%;max-width:430px;transform:translateY(100%);transition:transform .2s ease-out;max-height:92vh;overflow-y:auto;}
@@ -131,7 +104,6 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
 .field select option{background:var(--bg-dark);color:var(--fg);}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 .modal-actions{display:flex;gap:8px;margin-top:16px;}
-/* TOAST */
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--selection);color:var(--fg);font-family:'Poppins',sans-serif;font-size:11px;font-weight:500;padding:8px 16px;border-radius:var(--r-full);z-index:200;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;}
 .toast.show{opacity:1;}
 .btn{background:none;border:1px solid var(--selection);border-radius:var(--r-md);color:var(--muted);font-family:'Poppins',sans-serif;font-size:12px;font-weight:700;padding:10px 16px;cursor:pointer;transition:all .15s;flex:1;}
@@ -140,8 +112,6 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
 .btn-purple:hover{background:rgba(189,147,249,.12);}
 .btn-red{border-color:var(--red);color:var(--red);}
 .btn-red:hover{background:rgba(255,85,85,.12);}
-
-/* AI ADVISOR */
 .ai-cta-btn{background:transparent;border:1px solid var(--purple);border-radius:var(--r-md);color:var(--purple);font-family:'Poppins',sans-serif;font-size:13px;font-weight:700;padding:12px 24px;cursor:pointer;transition:background .15s;width:100%;}
 .ai-cta-btn:hover{background:rgba(189,147,249,0.1);}
 .ai-msg{background:var(--bg-dark);border:1px solid var(--selection);border-radius:var(--r-lg);padding:12px 14px;margin-bottom:8px;font-size:11px;line-height:1.7;color:var(--fg);}
@@ -174,7 +144,6 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
 </head>
 <body>
 <div id="app">
-  <!-- HEADER -->
   <div class="header">
     <div class="header-top">
       <span class="streak-badge" id="streak-badge" style="display:none;">🔥 0 meses</span>
@@ -182,7 +151,12 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
     <div class="hero-card">
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
         <div class="hero-label" id="hero-label" style="margin-bottom:0;">TOTAL</div>
-        <button id="visibility-btn" onclick="toggleVisibility()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0;line-height:1;opacity:0.6;" title="Mostrar/ocultar saldos">◎</button>
+        <button id="visibility-btn" onclick="toggleVisibility()" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:0;line-height:1;display:flex;align-items:center;opacity:0.7;" title="Mostrar/ocultar saldos">
+          <svg id="visibility-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
       </div>
       <div class="hero-usd" id="hero-usd">u$s 0</div>
       <div class="hero-ars" id="hero-ars">$ 0</div>
@@ -195,10 +169,7 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
       </div>
     </div>
   </div>
-
-  <!-- SCROLL AREA -->
   <div class="scroll-area">
-    <!-- Monthly budget -->
     <div style="margin-bottom:12px;">
       <div class="budget-row">
         <span class="budget-label">Aporte mensual</span>
@@ -209,8 +180,6 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
         </div>
       </div>
     </div>
-
-    <!-- Assets section -->
     <div class="section-label">
       <span>ACTIVOS</span>
       <div style="display:flex;align-items:center;gap:10px;">
@@ -222,10 +191,7 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
       </div>
     </div>
     <div id="assets-list"></div>
-
   </div>
-
-  <!-- GOALS TAB -->
   <div id="tab-goals" class="scroll-area" style="display:none;padding-bottom:140px;">
     <div class="section-label"><span>OBJETIVOS</span></div>
     <div id="goals-list"></div>
@@ -234,11 +200,7 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
       <p style="font-size:10px;">Tocá el botón <strong style="color:var(--purple)">+</strong> para agregar tu primer objetivo.</p>
     </div>
   </div>
-
-  <!-- AI ADVISOR TAB -->
   <div id="tab-ai" class="scroll-area" style="display:none;padding-bottom:140px;">
-
-    <!-- Idle state: no profile yet -->
     <div id="ai-idle">
       <div style="text-align:center;padding:24px 16px 20px;">
         <div style="font-size:32px;margin-bottom:10px;">🤖</div>
@@ -247,29 +209,18 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
         <button class="ai-cta-btn" onclick="startAdvisor()">Analizar mi portafolio</button>
       </div>
     </div>
-
-    <!-- Interview + response area -->
     <div id="ai-session" style="display:none;">
-      <!-- Messages -->
       <div id="ai-messages"></div>
-      <!-- Option buttons -->
       <div id="ai-options" style="margin-top:8px;"></div>
-      <!-- Loading -->
       <div id="ai-loading" style="display:none;padding:12px 0;text-align:center;">
         <span style="font-size:11px;color:var(--muted);">Analizando<span class="ai-dots"></span></span>
       </div>
-      <!-- Restart -->
       <div id="ai-restart" style="display:none;text-align:center;margin-top:16px;">
         <button class="btn" onclick="resetAdvisor()" style="font-size:11px;padding:7px 16px;">Empezar de nuevo</button>
       </div>
     </div>
-
   </div>
-
-  <!-- FAB -->
   <button class="fab" id="fab-btn" onclick="onFabClick()" title="Agregar">+</button>
-
-  <!-- BOTTOM NAV -->
   <nav class="nav">
     <div class="nav-item active" id="nav-portfolio" onclick="switchTab('portfolio')">
       <span class="nav-icon">💼</span>
@@ -286,8 +237,6 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
     </div>
   </nav>
 </div>
-
-<!-- ADD/EDIT MODAL -->
 <div class="overlay" id="overlay" onclick="onOverlayClick(event)">
   <div class="modal" id="modal">
     <div class="modal-header">
@@ -340,11 +289,9 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
     </div>
   </div>
 </div>
-
-<!-- CONFIRM DELETE DIALOG -->
 <div class="confirm-overlay" id="confirm-overlay">
   <div class="confirm-box">
-    <div class="confirm-title">Eliminar</div>
+    <div class="confirm-title" id="confirm-title">Eliminar</div>
     <div class="confirm-msg" id="confirm-msg">¿Eliminar este elemento? Esta acción no se puede deshacer.</div>
     <div class="confirm-actions">
       <button class="btn" onclick="closeConfirm()">Cancelar</button>
@@ -352,11 +299,7 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
     </div>
   </div>
 </div>
-
-<!-- TOAST -->
 <div class="toast" id="toast"></div>
-
-<!-- GOAL MODAL -->
 <div class="overlay" id="goal-overlay" onclick="onGoalOverlayClick(event)">
   <div class="modal" id="goal-modal">
     <div class="modal-header">
@@ -391,7 +334,7 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
       </div>
     </div>
     <div class="field">
-      <label>Aporte mensual al objetivo <span id="g-monthly-currency-hint" style="font-weight:300;text-transform:none;letter-spacing:0;">(en la moneda del objetivo)</span></label>
+      <label>Aporte mensual al objetivo <span style="font-weight:300;text-transform:none;letter-spacing:0;">(en la moneda del objetivo)</span></label>
       <input id="g-monthly" type="number" placeholder="0" step="any" min="0">
     </div>
     <div class="modal-actions">
@@ -401,7 +344,6 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
     </div>
   </div>
 </div>
-
 <script>
 // ── STATE ─────────────────────────────────────────────────────
 let assets          = [];
@@ -413,6 +355,10 @@ let showRebalanceo  = false;
 let balancesVisible = true;
 let editingId       = null;
 let rateEditing     = false;
+let goals           = [];
+let editingGoalId   = null;
+let currentTab      = 'portfolio';
+let pendingDeleteFn = null;
 
 const SK = {
   assets:         'habito_assets',
@@ -424,7 +370,6 @@ const SK = {
   goals:          'habito_goals',
 };
 
-// ── INIT ──────────────────────────────────────────────────────
 function init() {
   loadStorage();
   fetchUSDRate();
@@ -522,7 +467,6 @@ function saveRate() {
   render();
 }
 
-// ── NUMBER FORMAT (Latin American) ────────────────────────────
 function fmtNum(n, dec) {
   if (isNaN(n) || n === null || n === undefined) return '0';
   dec = dec === undefined ? 1 : dec;
@@ -537,22 +481,22 @@ function fmtUSD(n) { return 'u$s\u00A0' + fmtNum(n, 1); }
 function fmtARS(n) { return '$\u00A0'   + fmtNum(n, 0); }
 
 function safeRate() { return usdRate > 0 ? usdRate : 1; }
-function toARSval(a) {
-  return a.currency === 'USD' ? a.balance * safeRate() : a.balance;
-}
+function toARSval(a) { return a.currency === 'USD' ? a.balance * safeRate() : a.balance; }
 function totalARS() { return assets.reduce((s, a) => s + toARSval(a), 0); }
 function totalUSD() { return totalARS() / safeRate(); }
 
 function toggleVisibility() {
   balancesVisible = !balancesVisible;
   const btn = document.getElementById('visibility-btn');
-  btn.textContent = balancesVisible ? '◎' : '⊙';
-  btn.style.opacity = balancesVisible ? '0.6' : '0.3';
+  const icon = document.getElementById('visibility-icon');
+  icon.innerHTML = balancesVisible
+    ? '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"></path><circle cx="12" cy="12" r="3"></circle>'
+    : '<path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+  btn.style.opacity = balancesVisible ? '0.7' : '0.5';
   renderHero();
   renderAssets();
 }
 
-// ── RENDER ────────────────────────────────────────────────────
 function render() { renderHero(); renderAssets(); }
 
 function renderHero() {
@@ -586,7 +530,6 @@ function renderAssets() {
     return;
   }
 
-  // Target % total
   const totTarget = assets.reduce((s, a) => s + (a.targetPct || 0), 0);
   const tEl = document.getElementById('target-total-label');
   if (assets.length >= 2) {
@@ -599,9 +542,6 @@ function renderAssets() {
   const typeLabels = { Crypto:'Crypto', Stock:'Acción', ETF:'ETF', FCI:'FCI', Bond:'Bono', Cash:'Efectivo', Other:'Otro' };
   const badgeMap   = { Crypto:'badge-crypto', Stock:'badge-stock', ETF:'badge-etf', FCI:'badge-fci', Bond:'badge-bond', Cash:'badge-cash', Other:'badge-other' };
 
-  // ── Deficit-proportionate aporte ─────────────────────────────
-  // If targets set → distribute proportionally to deficit (underweight assets only)
-  // If no targets set → distribute equally across all assets
   const budARS = budgetInARS();
   const realPcts = assets.map(a => totARS > 0 ? (toARSval(a) / totARS) * 100 : 0);
   const hasTargets = assets.some(a => (a.targetPct || 0) > 0);
@@ -611,16 +551,13 @@ function renderAssets() {
     const deficits = assets.map((a, i) => Math.max((a.targetPct || 0) - realPcts[i], 0));
     const totalDeficit = deficits.reduce((s, d) => s + d, 0);
     aportes = deficits.map(d => totalDeficit > 0 ? budARS * (d / totalDeficit) : 0);
-    // fallback: if all assets are perfectly balanced, distribute by target %
     if (totalDeficit === 0) {
       const totalTarget = assets.reduce((s, a) => s + (a.targetPct || 0), 0);
       aportes = assets.map(a => totalTarget > 0 ? budARS * ((a.targetPct || 0) / totalTarget) : budARS / assets.length);
     }
   } else {
-    // No targets set — split equally
     aportes = assets.map(() => budARS / assets.length);
   }
-  // Fix float rounding — assign remainder to last non-zero aporte
   const aporteSum  = aportes.reduce((s, a) => s + a, 0);
   const roundingDiff = budARS - aporteSum;
   if (Math.abs(roundingDiff) > 0 && aportes.length) {
@@ -634,25 +571,17 @@ function renderAssets() {
     const objPct  = a.targetPct || 0;
     const diff    = realPct - objPct;
     const pctCls  = Math.abs(diff) <= 3 ? 'pct-ok' : diff > 8 ? 'pct-over' : diff < -8 ? 'pct-under pct-severe' : 'pct-under';
-    const dispVal = balancesVisible
-      ? (a.currency === 'USD' ? fmtUSD(a.balance) : fmtARS(a.balance))
-      : '•••';
+    const dispVal = balancesVisible ? (a.currency === 'USD' ? fmtUSD(a.balance) : fmtARS(a.balance)) : '•••';
     const rebal   = totARS * (objPct / 100) - arsVal;
-    const rebalDisplay = budgetCurrency === 'USD'
-      ? fmtUSD(rebal / safeRate())
-      : fmtARS(rebal);
+    const rebalDisplay = budgetCurrency === 'USD' ? fmtUSD(rebal / safeRate()) : fmtARS(rebal);
     const rebalHtml = !balancesVisible
       ? `<span style="color:var(--muted)">•••</span>`
       : rebal >= 0
         ? `<span style="color:var(--green)">+${rebalDisplay}</span>`
         : `<span style="color:var(--red)">${rebalDisplay}</span>`;
-    const rebalSection = showRebalanceo
-      ? `<span style="color:var(--muted);">Rebalanceo: ${rebalHtml}</span>`
-      : '';
+    const rebalSection = showRebalanceo ? `<span style="color:var(--muted);">Rebalanceo: ${rebalHtml}</span>` : '';
     const aporte = aportes[i];
-    const aporteDisplay = budgetCurrency === 'USD'
-      ? fmtUSD(aporte / safeRate())
-      : fmtARS(aporte);
+    const aporteDisplay = budgetCurrency === 'USD' ? fmtUSD(aporte / safeRate()) : fmtARS(aporte);
     const aporteHtml = !balancesVisible
       ? `<span style="color:var(--muted)">•••</span>`
       : budARS > 0
@@ -687,12 +616,10 @@ function renderAssets() {
   }).join('');
 }
 
-// ── MODAL ─────────────────────────────────────────────────────
 function openModal(id) {
   editingId = id || null;
   const title  = document.getElementById('modal-title');
   const delBtn = document.getElementById('btn-delete');
-
   if (editingId) {
     const a = assets.find(x => x.id === id);
     if (!a) return;
@@ -714,7 +641,6 @@ function openModal(id) {
     document.getElementById('f-currency').selectedIndex = 0;
     document.getElementById('f-target').value   = '';
   }
-
   document.getElementById('overlay').classList.add('open');
   setTimeout(() => document.getElementById('f-name').focus(), 250);
 }
@@ -739,6 +665,7 @@ function saveAsset() {
     setTimeout(() => document.getElementById('f-name').style.borderColor = '', 1500);
     return;
   }
+  const wasEditing = !!editingId;
   const asset = {
     id:        editingId || uid(),
     name,
@@ -755,7 +682,6 @@ function saveAsset() {
   } else {
     assets.push(asset);
   }
-  const wasEditing = !!editingId;
   updateStreak();
   persist();
   closeModal();
@@ -766,8 +692,8 @@ function saveAsset() {
 function confirmDelete() {
   const a = assets.find(x => x.id === editingId);
   if (!a) return;
-  document.getElementById('confirm-msg').textContent =
-    `¿Eliminar "${a.name}"? Esta acción no se puede deshacer.`;
+  document.getElementById('confirm-title').textContent = 'Eliminar activo';
+  document.getElementById('confirm-msg').textContent = `¿Eliminar "${a.name}"? Esta acción no se puede deshacer.`;
   pendingDeleteFn = deleteAsset;
   document.getElementById('confirm-overlay').classList.add('open');
 }
@@ -786,7 +712,6 @@ function deleteAsset() {
   showToast(`${name} eliminado.`);
 }
 
-// ── BUDGET ────────────────────────────────────────────────────
 function onBudgetChange() {
   budget = parseFloat(document.getElementById('budget-input').value) || 0;
   persist();
@@ -797,10 +722,8 @@ function setBudgetCurrency(cur) {
   if (cur === budgetCurrency) return;
   const live = parseFloat(document.getElementById('budget-input').value) || 0;
   if (live > 0) {
-    const converted = cur === 'USD'
-      ? live / safeRate()
-      : live * safeRate();
-    const rounded = parseFloat(converted.toFixed(cur === 'USD' ? 2 : 0));
+    const converted = cur === 'USD' ? live / safeRate() : live * safeRate();
+    const rounded = parseFloat(converted.toFixed(cur === 'USD' ? 1 : 0));
     document.getElementById('budget-input').value = rounded;
     budget = rounded;
   }
@@ -829,13 +752,11 @@ function applyRebalanceoUI() {
   if (pill) pill.className = 'toggle-pill' + (showRebalanceo ? ' on' : '');
 }
 
-// Returns budget always in ARS for calculations
 function budgetInARS() {
   const live = parseFloat(document.getElementById('budget-input')?.value) || budget;
   return budgetCurrency === 'USD' ? live * safeRate() : live;
 }
 
-// ── STREAK ────────────────────────────────────────────────────
 function updateStreak() {
   try {
     const raw = localStorage.getItem(SK.streak);
@@ -853,8 +774,7 @@ function updateStreak() {
       s.lastMonth = thisMonth;
       localStorage.setItem(SK.streak, JSON.stringify(s));
     }
-    document.getElementById('streak-badge').textContent =
-      `🔥 ${s.count} ${s.count === 1 ? 'mes' : 'meses'}`;
+    document.getElementById('streak-badge').textContent = `🔥 ${s.count} ${s.count === 1 ? 'mes' : 'meses'}`;
     document.getElementById('streak-badge').style.display = '';
   } catch(e) {}
 }
@@ -873,13 +793,6 @@ function loadStreak() {
   } catch(e) {}
 }
 
-// ── GOALS STATE ───────────────────────────────────────────────
-let goals = [];
-let editingGoalId = null;
-let currentTab = 'portfolio';
-let pendingDeleteFn = null;
-
-// load goals from storage
 function loadGoals() {
   try {
     const g = localStorage.getItem(SK.goals);
@@ -891,20 +804,15 @@ function persistGoals() {
   try { localStorage.setItem(SK.goals, JSON.stringify(goals)); } catch(e) {}
 }
 
-// ── TAB SWITCHING ─────────────────────────────────────────────
 function switchTab(tab) {
   currentTab = tab;
   const portfolio = document.querySelector('.scroll-area');
   const goalsTab  = document.getElementById('tab-goals');
   const aiTab     = document.getElementById('tab-ai');
   const fab       = document.getElementById('fab-btn');
-
-  // hide all
   portfolio.style.display = 'none';
   goalsTab.style.display  = 'none';
   aiTab.style.display     = 'none';
-
-  // show active
   if (tab === 'portfolio') {
     portfolio.style.display = 'block';
     fab.style.display = 'flex';
@@ -918,8 +826,6 @@ function switchTab(tab) {
     aiTab.style.display = 'block';
     fab.style.display = 'none';
   }
-
-  // update nav
   ['portfolio','goals','ai'].forEach(t => {
     const el = document.getElementById('nav-' + t);
     if (!el) return;
@@ -940,17 +846,13 @@ function onFabClick() {
   else if (currentTab === 'goals') openGoalModal(null);
 }
 
-// ── GOALS RENDER ──────────────────────────────────────────────
 function renderGoals() {
   const list  = document.getElementById('goals-list');
   const empty = document.getElementById('goals-empty');
   const tab   = document.getElementById('tab-goals');
   empty.style.display = 'none';
   list.innerHTML = '';
-  if (!goals.length) {
-    empty.style.display = 'block';
-    return;
-  }
+  if (!goals.length) { empty.style.display = 'block'; return; }
 
   const sorted = [...goals].sort((a, b) => {
     const pctA = a.target > 0 ? (a.current / a.target) : 0;
@@ -959,13 +861,11 @@ function renderGoals() {
   });
 
   list.innerHTML = sorted.map(g => {
-    const pct     = g.target > 0 ? Math.min((g.current / g.target) * 100, 100) : 0;
+    const pct       = g.target > 0 ? Math.min((g.current / g.target) * 100, 100) : 0;
     const remaining = Math.max(g.target - g.current, 0);
-    const monthly = g.monthly || 0;
-    const col     = pct >= 80 ? 'var(--green)' : pct >= 40 ? 'var(--purple)' : 'var(--orange)';
-    const dispCur = g.currency === 'USD' ? fmtUSD : fmtARS;
-
-    // ETA — monthly contribution assumed in same currency as goal
+    const monthly   = g.monthly || 0;
+    const col       = pct >= 80 ? 'var(--green)' : pct >= 40 ? 'var(--purple)' : 'var(--orange)';
+    const dispCur   = g.currency === 'USD' ? fmtUSD : fmtARS;
     let etaHtml = '';
     if (pct >= 100) {
       etaHtml = `<div class="goal-eta">✅ Objetivo alcanzado.</div>`;
@@ -984,7 +884,6 @@ function renderGoals() {
         etaHtml = `<div class="goal-eta">A este ritmo, alcanzás tu objetivo en <span>${etaStr}</span>.</div>`;
       }
     }
-
     return `
     <div class="goal-card" onclick="openGoalModal('${esc(g.id)}')">
       <div class="goal-header">
@@ -1005,27 +904,24 @@ function renderGoals() {
       ${etaHtml}
     </div>`;
   }).join('');
-  // Scroll to top so user sees updated state
   if (tab) tab.scrollTop = 0;
 }
 
-// ── GOAL MODAL ────────────────────────────────────────────────
 function openGoalModal(id) {
   editingGoalId = id || null;
   const title  = document.getElementById('goal-modal-title');
   const delBtn = document.getElementById('g-btn-delete');
-
   if (editingGoalId) {
     const g = goals.find(x => x.id === id);
     if (!g) return;
     title.textContent = '✎ Editar objetivo';
     delBtn.style.display = '';
-    document.getElementById('g-emoji').value   = g.emoji || '';
-    document.getElementById('g-name').value    = g.name;
-    document.getElementById('g-target').value  = g.target;
-    document.getElementById('g-current').value = g.current;
-    document.getElementById('g-currency').value= g.currency;
-    document.getElementById('g-monthly').value = g.monthly || '';
+    document.getElementById('g-emoji').value    = g.emoji || '';
+    document.getElementById('g-name').value     = g.name;
+    document.getElementById('g-target').value   = g.target;
+    document.getElementById('g-current').value  = g.current;
+    document.getElementById('g-currency').value = g.currency;
+    document.getElementById('g-monthly').value  = g.monthly || '';
   } else {
     title.textContent = '🎯 Agregar objetivo';
     delBtn.style.display = 'none';
@@ -1034,7 +930,6 @@ function openGoalModal(id) {
     });
     document.getElementById('g-currency').value = 'USD';
   }
-
   document.getElementById('goal-overlay').classList.add('open');
   setTimeout(() => document.getElementById('g-name').focus(), 250);
 }
@@ -1051,7 +946,6 @@ function onGoalOverlayClick(e) {
 function saveGoal() {
   const name   = document.getElementById('g-name').value.trim();
   const target = parseFloat(document.getElementById('g-target').value) || 0;
-
   if (!name) {
     document.getElementById('g-name').style.borderColor = 'var(--red)';
     document.getElementById('g-name').focus();
@@ -1064,6 +958,7 @@ function saveGoal() {
     setTimeout(() => document.getElementById('g-target').style.borderColor = '', 1500);
     return;
   }
+  const wasEditing = !!editingGoalId;
   const goal = {
     id:        editingGoalId || uid(),
     emoji:     document.getElementById('g-emoji').value.trim() || '🎯',
@@ -1082,7 +977,6 @@ function saveGoal() {
   } else {
     goals.push(goal);
   }
-  const wasEditing = !!editingGoalId;
   persistGoals();
   closeGoalModal();
   renderGoals();
@@ -1092,8 +986,8 @@ function saveGoal() {
 function confirmGoalDelete() {
   const g = goals.find(x => x.id === editingGoalId);
   if (!g) return;
-  document.getElementById('confirm-msg').textContent =
-    `¿Eliminar el objetivo "${g.name}"? Esta acción no se puede deshacer.`;
+  document.getElementById('confirm-title').textContent = 'Eliminar objetivo';
+  document.getElementById('confirm-msg').textContent = `¿Eliminar el objetivo "${g.name}"? Esta acción no se puede deshacer.`;
   pendingDeleteFn = deleteGoal;
   document.getElementById('confirm-overlay').classList.add('open');
 }
@@ -1106,16 +1000,14 @@ function deleteGoal() {
   renderGoals();
 }
 
-// ── CONFIRM (shared) ──────────────────────────────────────────
 function confirmDeleteAction() {
   if (pendingDeleteFn) pendingDeleteFn();
   pendingDeleteFn = null;
 }
+
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 function esc(s) {
-  return String(s)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -1142,9 +1034,7 @@ let aiEmptyPortfolio = false;
 
 function startAdvisor() {
   aiEmptyPortfolio = !assets.length;
-  aiProfile  = {};
-  aiHistory  = [];
-  aiPhase    = 'interview';
+  aiProfile = {}; aiHistory = []; aiPhase = 'interview';
   document.getElementById('ai-idle').style.display    = 'none';
   document.getElementById('ai-session').style.display = 'block';
   document.getElementById('ai-messages').innerHTML    = '';
@@ -1171,7 +1061,6 @@ function askQuestion(idx) {
 }
 
 function askAccountsQuestion() {
-  multiSelectChosen = [];
   showAiMsg(QUESTION_ACCOUNTS.text, false);
   showMultiSelect(QUESTION_ACCOUNTS.options, chosen => {
     aiProfile.accounts = chosen;
@@ -1184,9 +1073,7 @@ async function runStarterRecommendation() {
   aiPhase = 'analysis';
   showOptions([], null);
   showAiMsg('Preparando tu recomendación inicial<span class="ai-dots"></span>', false, true);
-  const sys = `Sos un advisor financiero directo para inversores latinoamericanos principiantes. Respondés en español sin jerga. Máximo 250 palabras. Sin emojis en el análisis.
-Perfil del inversor: horizonte ${aiProfile.horizon}, riesgo ${aiProfile.risk}, ahorro mensual ${aiProfile.monthly}, cuentas disponibles: ${aiProfile.accounts?.join(', ') || 'no especificado'}.
-El inversor NO tiene ningún activo todavía. Tu tarea es sugerirle un portafolio inicial concreto y simple, adaptado a su perfil y a las cuentas que tiene disponibles. Sé específico sobre qué tipo de activos considerar (FCIs, CEDEARs, stablecoins, etc.) y en qué proporción aproximada. No menciones plataformas específicas.`;
+  const sys = `Sos un advisor financiero directo para inversores latinoamericanos principiantes. Respondés en español sin jerga. Máximo 250 palabras. Sin emojis en el análisis.\nPerfil del inversor: horizonte ${aiProfile.horizon}, riesgo ${aiProfile.risk}, ahorro mensual ${aiProfile.monthly}, cuentas disponibles: ${aiProfile.accounts?.join(', ') || 'no especificado'}.\nEl inversor NO tiene ningún activo todavía. Sugerí un portafolio inicial concreto y simple, adaptado a su perfil y cuentas. Sé específico sobre qué tipo de activos considerar y en qué proporción aproximada. No menciones plataformas específicas.`;
   await callAI(sys, 'No tengo ninguna inversión todavía. ¿Por dónde empiezo?');
   showStarterFollowupOptions();
 }
@@ -1219,11 +1106,7 @@ async function askFollowup(q) {
   const sys = `Sos un advisor financiero directo para inversores latinoamericanos principiantes. Respondés en español sin jerga. Máximo 150 palabras.\nPerfil: horizonte ${aiProfile.horizon}, riesgo ${aiProfile.risk}.\n${ctx ? 'Portafolio:\n' + ctx : 'El inversor no tiene activos aún.'}`;
   aiHistory.push({ role:'user', content: q });
   await callAI(sys, null);
-  if (aiEmptyPortfolio) {
-    showStarterFollowupOptions();
-  } else {
-    showFollowupOptions();
-  }
+  if (aiEmptyPortfolio) { showStarterFollowupOptions(); } else { showFollowupOptions(); }
 }
 
 async function callAI(system, userMsg) {
@@ -1273,16 +1156,12 @@ function showAiMsg(text, isUser, isLoading) {
   if (isLoading) div.dataset.loading = '1';
   if (!isUser) {
     const lbl = document.createElement('div');
-    lbl.className   = 'ai-msg-label';
+    lbl.className = 'ai-msg-label';
     lbl.textContent = 'ADVISOR';
     div.appendChild(lbl);
   }
   const txt = document.createElement('div');
-  if (isUser) {
-    txt.textContent = text; // plain text for user input — no XSS risk
-  } else {
-    txt.innerHTML = text.replace(/\n/g,'<br>'); // AI/system text — safe
-  }
+  if (isUser) { txt.textContent = text; } else { txt.innerHTML = text.replace(/\n/g,'<br>'); }
   div.appendChild(txt);
   wrap.appendChild(div);
   div.scrollIntoView({ behavior:'smooth', block:'end' });
@@ -1301,7 +1180,7 @@ function showOptions(opts, cb) {
   div.className = 'ai-options-wrap';
   opts.forEach(opt => {
     const btn = document.createElement('button');
-    btn.className   = 'ai-opt-btn';
+    btn.className = 'ai-opt-btn';
     btn.textContent = opt;
     btn.onclick = () => { wrap.innerHTML = ''; if (cb) cb(opt); };
     div.appendChild(btn);
@@ -1316,12 +1195,10 @@ function showMultiSelect(opts, cb) {
   const chosen = [];
   const div = document.createElement('div');
   div.className = 'ai-options-wrap';
-
   opts.forEach(opt => {
     const btn = document.createElement('button');
     btn.className = 'ai-opt-btn';
     btn.textContent = opt;
-    btn.style.position = 'relative';
     btn.onclick = () => {
       const idx = chosen.indexOf(opt);
       if (idx >= 0) {
@@ -1336,8 +1213,6 @@ function showMultiSelect(opts, cb) {
     };
     div.appendChild(btn);
   });
-
-  // Confirm button
   const confirm = document.createElement('button');
   confirm.className = 'ai-opt-btn';
   confirm.textContent = 'Confirmar →';
