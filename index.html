@@ -19,7 +19,6 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
 #app{display:flex;flex-direction:column;height:100vh;max-width:430px;margin:0 auto;position:relative;background:var(--bg);}
 .header{padding:14px 16px 10px;background:var(--bg);border-bottom:1px solid var(--selection);flex-shrink:0;}
 .header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
-.app-name{font-size:13px;font-weight:700;color:var(--fg);}
 .streak-badge{background:rgba(189,147,249,0.15);border:1px solid var(--purple);border-radius:var(--r-sm);padding:3px 8px;font-size:10px;color:var(--purple);font-weight:500;}
 .hero-card{background:var(--bg-dark);border:1px solid var(--selection);border-radius:var(--r-lg);padding:14px 16px;}
 .hero-label{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;}
@@ -56,9 +55,6 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
 .badge-fci{background:rgba(255,184,108,0.12);color:var(--orange);border:1px solid rgba(255,184,108,0.3);}
 .badge-cash{background:rgba(98,114,164,0.12);color:var(--muted);border:1px solid rgba(98,114,164,0.3);}
 .badge-other{background:rgba(98,114,164,0.12);color:var(--muted);border:1px solid rgba(98,114,164,0.3);}
-.summary-row{background:var(--bg-dark);border:1px solid var(--selection);border-radius:var(--r-md);padding:10px 12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
-.summary-label{font-size:9px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase;}
-.summary-val{font-size:12px;font-weight:700;}
 .budget-row{background:var(--bg-darker);border:1px solid var(--selection);border-radius:var(--r-md);padding:8px 12px;display:flex;align-items:center;gap:8px;margin-bottom:12px;}
 .budget-label{font-size:10px;color:var(--muted);white-space:nowrap;}
 .budget-input{background:none;border:none;color:var(--fg);font-family:'Poppins',sans-serif;font-size:12px;font-weight:700;outline:none;flex:1;min-width:0;}
@@ -212,9 +208,6 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
     <div id="ai-session" style="display:none;">
       <div id="ai-messages"></div>
       <div id="ai-options" style="margin-top:8px;"></div>
-      <div id="ai-loading" style="display:none;padding:12px 0;text-align:center;">
-        <span style="font-size:11px;color:var(--muted);">Analizando<span class="ai-dots"></span></span>
-      </div>
       <div id="ai-restart" style="display:none;text-align:center;margin-top:16px;">
         <button class="btn" onclick="resetAdvisor()" style="font-size:11px;padding:7px 16px;">Empezar de nuevo</button>
       </div>
