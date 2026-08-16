@@ -95,8 +95,11 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
 .modal-close:hover{border-color:var(--red);color:var(--red);}
 .field{margin-bottom:12px;}
 .field label{display:block;font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;}
-.field input,.field select{width:100%;background:var(--bg-darker);border:1px solid var(--selection);border-radius:var(--r-sm);color:var(--fg);font-family:'Poppins',sans-serif;font-size:12px;padding:8px 10px;outline:none;transition:border-color .15s;appearance:none;-webkit-appearance:none;}
-.field input:focus,.field select:focus{border-color:var(--cyan);}
+.field input:not([type="checkbox"]),.field select{width:100%;background:var(--bg-darker);border:1px solid var(--selection);border-radius:var(--r-sm);color:var(--fg);font-family:'Poppins',sans-serif;font-size:12px;padding:8px 10px;outline:none;transition:border-color .15s;appearance:none;-webkit-appearance:none;}
+.field input:not([type="checkbox"]):focus,.field select:focus{border-color:var(--cyan);}
+.field input[type="checkbox"]{appearance:none;-webkit-appearance:none;width:16px;height:16px;border:1px solid var(--selection);border-radius:3px;background:var(--bg-darker);cursor:pointer;flex-shrink:0;position:relative;transition:all .15s;}
+.field input[type="checkbox"]:checked{background:var(--purple);border-color:var(--purple);}
+.field input[type="checkbox"]:checked::after{content:'✓';position:absolute;top:-2px;left:2px;font-size:11px;font-weight:700;color:var(--bg);}
 .field select option{background:var(--bg-dark);color:var(--fg);}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 .modal-actions{display:flex;gap:8px;margin-top:16px;}
@@ -175,6 +178,13 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
           <button id="btn-usd" onclick="setBudgetCurrency('USD')">USD</button>
         </div>
       </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:6px;padding:0 2px;">
+        <span style="font-size:9px;color:var(--muted);">Reinicia el día</span>
+        <input id="aporte-day-input" type="number" min="1" max="31" placeholder="1" style="width:28px;background:none;border:none;border-bottom:1px solid var(--selection);color:var(--muted);font-family:'Poppins',sans-serif;font-size:9px;text-align:center;outline:none;padding:1px 0;" oninput="onAporteDayChange()" onchange="onAporteDayChange()">
+        <span style="font-size:9px;color:var(--muted);">de cada mes</span>
+        <button onclick="manualAporteReset()" title="Reiniciar aporte ahora" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:9px;padding:0;margin-left:4px;text-decoration:underline;opacity:0.7;">reiniciar ahora</button>
+      </div>
+      <div id="aporte-surplus" style="display:none;font-size:9px;color:var(--muted);padding:6px 2px 0;"></div>
     </div>
     <div class="section-label">
       <span>ACTIVOS</span>
@@ -185,6 +195,9 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
           <div class="toggle-pill" id="rebal-pill"></div>
         </div>
       </div>
+    </div>
+    <div style="font-size:8px;color:var(--muted);opacity:0.5;margin:-4px 0 8px 2px;line-height:1.5;">
+      Rebalanceo: mover hoy entre activos. Aporte: distribuir el dinero nuevo del mes.
     </div>
     <div id="assets-list"></div>
   </div>
@@ -275,6 +288,12 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
       <label>% Objetivo <span style="font-weight:300;text-transform:none;letter-spacing:0;">(participación en el portafolio)</span></label>
       <input id="f-target" type="number" placeholder="0" min="0" max="100" step="0.1">
     </div>
+    <div class="field" id="f-aporte-check-wrap" style="display:none;">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0;font-weight:400;color:var(--fg);font-size:11px;">
+        <input id="f-aporte-check" type="checkbox">
+        Ya invertí el aporte de este mes
+      </label>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-red" id="btn-delete" style="display:none;" onclick="confirmDelete()">Eliminar</button>
       <button class="btn" onclick="closeModal()">Cancelar</button>
@@ -352,6 +371,8 @@ let goals           = [];
 let editingGoalId   = null;
 let currentTab      = 'portfolio';
 let pendingDeleteFn = null;
+let aporteDay       = 1;
+let aporteState     = { month: '', amounts: {}, confirmed: {} };
 
 const SK = {
   assets:         'habito_assets',
@@ -361,6 +382,8 @@ const SK = {
   rebalanceo:     'habito_rebalanceo',
   streak:         'habito_streak',
   goals:          'habito_goals',
+  aporteDay:      'habito_aporte_day',
+  aporteState:    'habito_aporte_state',
 };
 
 function init() {
@@ -385,6 +408,14 @@ function loadStorage() {
     if (bc) { budgetCurrency = bc; applyBudgetCurrencyUI(); }
     const rb = localStorage.getItem(SK.rebalanceo);
     if (rb) { showRebalanceo = rb === 'true'; applyRebalanceoUI(); }
+    const ad = localStorage.getItem(SK.aporteDay);
+    if (ad) {
+      aporteDay = parseInt(ad, 10) || 1;
+      document.getElementById('aporte-day-input').value = aporteDay;
+    }
+    const as = localStorage.getItem(SK.aporteState);
+    if (as) { try { aporteState = JSON.parse(as); } catch(e) {} }
+    checkAporteReset();
   } catch(e) { console.warn('Storage load error', e); }
 }
 
@@ -395,7 +426,66 @@ function persist() {
     localStorage.setItem(SK.budget, String(budget));
     localStorage.setItem(SK.budgetCurrency, budgetCurrency);
     localStorage.setItem(SK.rebalanceo, String(showRebalanceo));
+    localStorage.setItem(SK.aporteDay, String(aporteDay));
+    localStorage.setItem(SK.aporteState, JSON.stringify(aporteState));
   } catch(e) { console.warn('Storage save error', e); }
+}
+
+function onAporteDayChange() {
+  const v = parseInt(document.getElementById('aporte-day-input').value, 10);
+  aporteDay = (v >= 1 && v <= 31) ? v : 1;
+  persist();
+}
+
+// ── APORTE QUOTA (monthly freeze) ────────────────────────────
+function currentCycleKey() {
+  const now = new Date();
+  let y = now.getFullYear(), m = now.getMonth();
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const effectiveDay = Math.min(aporteDay, daysInMonth);
+  // If today is before the configured aporte day, we're still in last month's cycle
+  if (now.getDate() < effectiveDay) {
+    m -= 1;
+    if (m < 0) { m = 11; y -= 1; }
+  }
+  return `${y}-${m}`;
+}
+
+function checkAporteReset() {
+  const key = currentCycleKey();
+  if (aporteState.month !== key) {
+    aporteState = { month: key, amounts: {}, confirmed: {} };
+    persist();
+  }
+}
+
+function manualAporteReset() {
+  try {
+    aporteState = { month: currentCycleKey(), amounts: {}, confirmed: {} };
+    persist();
+    render();
+    showToast('Aporte reiniciado.');
+  } catch(e) {
+    console.warn('manualAporteReset error', e);
+  }
+}
+
+function ensureAporteAmounts(computedAportes, assetIds) {
+  // Freeze computed amounts into aporteState if not already frozen this cycle
+  let changed = false;
+  assetIds.forEach((id, i) => {
+    if (!(id in aporteState.amounts)) {
+      aporteState.amounts[id] = computedAportes[i];
+      changed = true;
+    }
+  });
+  if (changed) persist();
+}
+
+function toggleAporteConfirmed(assetId, checked) {
+  aporteState.confirmed[assetId] = checked;
+  persist();
+  render();
 }
 
 async function fetchUSDRate() {
@@ -538,25 +628,27 @@ function renderAssets() {
   const budARS = budgetInARS();
   const realPcts = assets.map(a => totARS > 0 ? (toARSval(a) / totARS) * 100 : 0);
   const hasTargets = assets.some(a => (a.targetPct || 0) > 0);
-  let aportes;
+  let computedAportes;
+  let surplus = 0;
 
   if (hasTargets) {
-    const deficits = assets.map((a, i) => Math.max((a.targetPct || 0) - realPcts[i], 0));
-    const totalDeficit = deficits.reduce((s, d) => s + d, 0);
-    aportes = deficits.map(d => totalDeficit > 0 ? budARS * (d / totalDeficit) : 0);
-    if (totalDeficit === 0) {
-      const totalTarget = assets.reduce((s, a) => s + (a.targetPct || 0), 0);
-      aportes = assets.map(a => totalTarget > 0 ? budARS * ((a.targetPct || 0) / totalTarget) : budARS / assets.length);
-    }
+    // New total after investing this month's budget
+    const newTotal = totARS + budARS;
+    // Each asset's aporte = its target % of the NEW total, minus what it already has
+    // Can be negative if the asset is overweight even relative to the new total — clamp to 0
+    const rawAportes = assets.map(a => (newTotal * ((a.targetPct || 0) / 100)) - toARSval(a));
+    computedAportes = rawAportes.map(v => Math.max(v, 0));
+    // Any budget left over after all targets are satisfied (e.g. target % doesn't sum to 100%)
+    const totalAssigned = computedAportes.reduce((s, v) => s + v, 0);
+    surplus = Math.max(budARS - totalAssigned, 0);
   } else {
-    aportes = assets.map(() => budARS / assets.length);
+    // No targets set — split equally, no cap since there's no "need" to measure against
+    computedAportes = assets.map(() => budARS / assets.length);
   }
-  const aporteSum  = aportes.reduce((s, a) => s + a, 0);
-  const roundingDiff = budARS - aporteSum;
-  if (Math.abs(roundingDiff) > 0 && aportes.length) {
-    const lastNonZero = aportes.map((a, i) => a > 0 ? i : -1).filter(i => i >= 0).pop();
-    if (lastNonZero !== undefined) aportes[lastNonZero] += roundingDiff;
-  }
+
+  // Freeze amounts for this cycle if not already frozen
+  checkAporteReset();
+  ensureAporteAmounts(computedAportes, assets.map(a => a.id));
 
   list.innerHTML = assets.map((a, i) => {
     const arsVal  = toARSval(a);
@@ -573,15 +665,28 @@ function renderAssets() {
         ? `<span style="color:var(--green)">+${rebalDisplay}</span>`
         : `<span style="color:var(--red)">${rebalDisplay}</span>`;
     const rebalSection = showRebalanceo ? `<span style="color:var(--muted);">Rebalanceo: ${rebalHtml}</span>` : '';
-    const aporte = aportes[i];
+
+    // Use frozen aporte amount for this cycle, not the live recalculation
+    const aporte = aporteState.amounts[a.id] ?? computedAportes[i];
+    const isConfirmed = !!aporteState.confirmed[a.id];
+    const isOverweight = realPct > objPct + 0.5;
     const aporteDisplay = budgetCurrency === 'USD' ? fmtUSD(aporte / safeRate()) : fmtARS(aporte);
-    const aporteHtml = !balancesVisible
-      ? `<span style="color:var(--muted)">•••</span>`
-      : budARS > 0
-        ? (aporte > 0
-            ? `<span style="color:var(--cyan)">${aporteDisplay}</span>`
-            : `<span style="color:var(--muted)">— <span style="color:var(--orange);font-size:8px;">Sobreasignado</span></span>`)
-        : `<span style="color:var(--muted)">—</span>`;
+    let aporteHtml;
+    if (!balancesVisible) {
+      aporteHtml = `<span style="color:var(--muted)">•••</span>`;
+    } else if (isConfirmed) {
+      aporteHtml = `<span style="color:var(--green)">${budgetCurrency === 'USD' ? fmtUSD(0) : fmtARS(0)} ✓</span>`;
+    } else if (budARS > 0 && aporte > 0) {
+      aporteHtml = `<span style="color:var(--cyan)">${aporteDisplay}</span>`;
+    } else if (budARS > 0 && objPct === 0) {
+      aporteHtml = `<span style="color:var(--muted)">— <span style="color:var(--muted);font-size:8px;">Sin objetivo</span></span>`;
+    } else if (budARS > 0 && isOverweight) {
+      aporteHtml = `<span style="color:var(--muted)">— <span style="color:var(--orange);font-size:8px;">Sobreasignado</span></span>`;
+    } else if (budARS > 0) {
+      aporteHtml = `<span style="color:var(--muted)">— <span style="color:var(--green);font-size:8px;">En objetivo</span></span>`;
+    } else {
+      aporteHtml = `<span style="color:var(--muted)">—</span>`;
+    }
     const badge = badgeMap[a.type] || 'badge-other';
     const label = typeLabels[a.type] || a.type;
 
@@ -607,6 +712,20 @@ function renderAssets() {
       </div>
     </div>`;
   }).join('');
+
+  const surplusEl = document.getElementById('aporte-surplus');
+  if (surplusEl) {
+    if (surplus > 0.5 && budARS > 0) {
+      const surplusDisplay = budgetCurrency === 'USD' ? fmtUSD(surplus / safeRate()) : fmtARS(surplus);
+      const targetsIncomplete = Math.abs(totTarget - 100) > 0.5;
+      surplusEl.textContent = targetsIncomplete
+        ? `${surplusDisplay} sin asignar — revisá que tus % objetivo sumen 100%.`
+        : `${surplusDisplay} sin asignar — ya cubriste el rebalanceo completo con este aporte.`;
+      surplusEl.style.display = 'block';
+    } else {
+      surplusEl.style.display = 'none';
+    }
+  }
 }
 
 function openModal(id) {
@@ -624,6 +743,8 @@ function openModal(id) {
     document.getElementById('f-balance').value = a.balance;
     document.getElementById('f-currency').value= a.currency;
     document.getElementById('f-target').value  = a.targetPct || '';
+    document.getElementById('f-aporte-check-wrap').style.display = '';
+    document.getElementById('f-aporte-check').checked = !!aporteState.confirmed[a.id];
   } else {
     title.textContent = '+ Agregar activo';
     delBtn.style.display = 'none';
@@ -633,6 +754,8 @@ function openModal(id) {
     document.getElementById('f-balance').value  = '';
     document.getElementById('f-currency').selectedIndex = 0;
     document.getElementById('f-target').value   = '';
+    document.getElementById('f-aporte-check-wrap').style.display = 'none';
+    document.getElementById('f-aporte-check').checked = false;
   }
   document.getElementById('overlay').classList.add('open');
   setTimeout(() => document.getElementById('f-name').focus(), 250);
@@ -672,6 +795,7 @@ function saveAsset() {
   if (editingId) {
     const idx = assets.findIndex(a => a.id === editingId);
     if (idx >= 0) assets[idx] = asset;
+    aporteState.confirmed[asset.id] = document.getElementById('f-aporte-check').checked;
   } else {
     assets.push(asset);
   }
@@ -698,6 +822,8 @@ function closeConfirm() {
 function deleteAsset() {
   const name = assets.find(a => a.id === editingId)?.name || 'Activo';
   assets = assets.filter(a => a.id !== editingId);
+  delete aporteState.amounts[editingId];
+  delete aporteState.confirmed[editingId];
   persist();
   closeConfirm();
   closeModal();
@@ -707,6 +833,9 @@ function deleteAsset() {
 
 function onBudgetChange() {
   budget = parseFloat(document.getElementById('budget-input').value) || 0;
+  // Budget changed mid-month — re-freeze amounts against the new budget,
+  // but keep existing confirmations (already-invested assets stay confirmed)
+  aporteState.amounts = {};
   persist();
   render();
 }
