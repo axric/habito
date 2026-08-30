@@ -133,6 +133,17 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
 .goal-meta{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:6px;}
 .goal-eta{font-size:10px;color:var(--muted);font-style:italic;margin-top:4px;padding-top:6px;border-top:1px solid var(--selection);}
 .goal-eta span{color:var(--purple);font-style:normal;font-weight:700;}
+/* GOAL ASSET PICKER — reuses portfolio badge color scheme */
+.asset-chip{display:flex;align-items:center;gap:3px;padding:2px 7px;border-radius:var(--r-full);font-size:8px;font-weight:600;cursor:pointer;border:1px solid var(--selection);background:var(--bg-darker);color:var(--muted);transition:all .15s;}
+.asset-chip.selected.chip-crypto{background:rgba(189,147,249,0.15);color:var(--purple);border-color:var(--purple);}
+.asset-chip.selected.chip-stock{background:rgba(139,233,253,0.15);color:var(--cyan);border-color:var(--cyan);}
+.asset-chip.selected.chip-etf{background:rgba(80,250,123,0.15);color:var(--green);border-color:var(--green);}
+.asset-chip.selected.chip-bond{background:rgba(241,250,140,0.15);color:var(--yellow);border-color:var(--yellow);}
+.asset-chip.selected.chip-fci{background:rgba(255,184,108,0.15);color:var(--orange);border-color:var(--orange);}
+.asset-chip.selected.chip-cash,.asset-chip.selected.chip-other{background:rgba(98,114,164,0.15);color:var(--fg);border-color:var(--muted);}
+.asset-chip-check{width:9px;height:9px;border-radius:50%;border:1px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:6px;flex-shrink:0;}
+.asset-chip.selected .asset-chip-check{background:currentColor;}
+.asset-chip.selected .asset-chip-check::after{content:'✓';color:var(--bg-darker);font-size:5px;}
 .confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:200;opacity:0;pointer-events:none;transition:opacity .15s;padding:20px;}
 .confirm-overlay.open{opacity:1;pointer-events:all;}
 .confirm-box{background:var(--bg-dark);border:1px solid var(--selection);border-radius:var(--r-lg);padding:20px;width:100%;max-width:320px;}
@@ -325,7 +336,7 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
       </div>
       <div class="field">
         <label>Moneda</label>
-        <select id="g-currency">
+        <select id="g-currency" onchange="applyGoalCurrentLockUI()">
           <option value="USD">USD (u$s)</option>
           <option value="ARS">ARS ($)</option>
         </select>
@@ -341,9 +352,14 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
         <input id="g-target" type="number" placeholder="0" step="any" min="0">
       </div>
       <div class="field">
-        <label>Ahorrado hasta hoy</label>
+        <label id="g-current-label">Ahorrado hasta hoy</label>
         <input id="g-current" type="number" placeholder="0" step="any" min="0">
       </div>
+    </div>
+    <div class="field">
+      <label>Vincular activos <span style="font-weight:300;text-transform:none;letter-spacing:0;">(opcional — suma su valor automáticamente)</span></label>
+      <div id="g-assets-picker" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+      <div id="g-assets-empty" style="display:none;font-size:10px;color:var(--muted);padding:4px 0;">No tenés activos en tu portafolio todavía.</div>
     </div>
     <div class="field">
       <label>Aporte mensual al objetivo <span style="font-weight:300;text-transform:none;letter-spacing:0;">(en la moneda del objetivo)</span></label>
@@ -373,6 +389,10 @@ let currentTab      = 'portfolio';
 let pendingDeleteFn = null;
 let aporteDay       = 1;
 let aporteState     = { month: '', amounts: {}, confirmed: {} };
+
+// Shared type → badge/label maps, used in both portfolio rows and goal linked-asset chips
+const TYPE_BADGE_MAP = { Crypto:'badge-crypto', Stock:'badge-stock', ETF:'badge-etf', FCI:'badge-fci', Bond:'badge-bond', Cash:'badge-cash', Other:'badge-other' };
+const TYPE_LABEL_MAP = { Crypto:'Crypto', Stock:'Acción', ETF:'ETF', FCI:'FCI', Bond:'Bono', Cash:'Efectivo', Other:'Otro' };
 
 const SK = {
   assets:         'habito_assets',
@@ -622,8 +642,8 @@ function renderAssets() {
     tEl.textContent = '';
   }
 
-  const typeLabels = { Crypto:'Crypto', Stock:'Acción', ETF:'ETF', FCI:'FCI', Bond:'Bono', Cash:'Efectivo', Other:'Otro' };
-  const badgeMap   = { Crypto:'badge-crypto', Stock:'badge-stock', ETF:'badge-etf', FCI:'badge-fci', Bond:'badge-bond', Cash:'badge-cash', Other:'badge-other' };
+  const typeLabels = TYPE_LABEL_MAP;
+  const badgeMap   = TYPE_BADGE_MAP;
 
   const budARS = budgetInARS();
   const realPcts = assets.map(a => totARS > 0 ? (toARSval(a) / totARS) * 100 : 0);
@@ -824,6 +844,13 @@ function deleteAsset() {
   assets = assets.filter(a => a.id !== editingId);
   delete aporteState.amounts[editingId];
   delete aporteState.confirmed[editingId];
+  // Unlink from any goals — freeze their last computed value as manual so nothing breaks
+  goals.forEach(g => {
+    if (Array.isArray(g.linkedAssetIds) && g.linkedAssetIds.includes(editingId)) {
+      g.linkedAssetIds = g.linkedAssetIds.filter(id => id !== editingId);
+    }
+  });
+  persistGoals();
   persist();
   closeConfirm();
   closeModal();
@@ -983,8 +1010,10 @@ function renderGoals() {
   });
 
   list.innerHTML = sorted.map(g => {
-    const pct       = g.target > 0 ? Math.min((g.current / g.target) * 100, 100) : 0;
-    const remaining = Math.max(g.target - g.current, 0);
+    const isLinked = Array.isArray(g.linkedAssetIds) && g.linkedAssetIds.length > 0;
+    const liveCurrent = isLinked ? sumLinkedAssets(g.linkedAssetIds, g.currency) : g.current;
+    const pct       = g.target > 0 ? Math.min((liveCurrent / g.target) * 100, 100) : 0;
+    const remaining = Math.max(g.target - liveCurrent, 0);
     const monthly   = g.monthly || 0;
     const col       = pct >= 80 ? 'var(--green)' : pct >= 40 ? 'var(--purple)' : 'var(--orange)';
     const dispCur   = g.currency === 'USD' ? fmtUSD : fmtARS;
@@ -1006,6 +1035,15 @@ function renderGoals() {
         etaHtml = `<div class="goal-eta">A este ritmo, alcanzás tu objetivo en <span>${etaStr}</span>.</div>`;
       }
     }
+    const linkedAssetsData = isLinked
+      ? g.linkedAssetIds.map(id => assets.find(a => a.id === id)).filter(Boolean)
+      : [];
+    const linkedRow = linkedAssetsData.length
+      ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;align-items:center;">
+          <span style="font-size:8px;color:var(--muted);">🔗</span>
+          ${linkedAssetsData.map(a => `<span class="badge ${TYPE_BADGE_MAP[a.type] || 'badge-other'}">${esc(a.name)}</span>`).join('')}
+        </div>`
+      : '';
     return `
     <div class="goal-card" onclick="openGoalModal('${esc(g.id)}')">
       <div class="goal-header">
@@ -1019,15 +1057,18 @@ function renderGoals() {
         <div class="goal-progress-fill" style="width:${pct}%;background:${col};"></div>
       </div>
       <div class="goal-meta">
-        <span>${dispCur(g.current)} ahorrados</span>
+        <span>${dispCur(liveCurrent)} ahorrados</span>
         <span>meta: ${dispCur(g.target)}</span>
         <span style="color:${col}">faltan: ${dispCur(remaining)}</span>
       </div>
+      ${linkedRow}
       ${etaHtml}
     </div>`;
   }).join('');
   if (tab) tab.scrollTop = 0;
 }
+
+let goalLinkedAssetIds = [];
 
 function openGoalModal(id) {
   editingGoalId = id || null;
@@ -1044,6 +1085,7 @@ function openGoalModal(id) {
     document.getElementById('g-current').value  = g.current;
     document.getElementById('g-currency').value = g.currency;
     document.getElementById('g-monthly').value  = g.monthly || '';
+    goalLinkedAssetIds = Array.isArray(g.linkedAssetIds) ? [...g.linkedAssetIds] : [];
   } else {
     title.textContent = '🎯 Agregar objetivo';
     delBtn.style.display = 'none';
@@ -1051,9 +1093,63 @@ function openGoalModal(id) {
       document.getElementById(id).value = '';
     });
     document.getElementById('g-currency').value = 'USD';
+    goalLinkedAssetIds = [];
   }
+  renderAssetPicker();
+  applyGoalCurrentLockUI();
   document.getElementById('goal-overlay').classList.add('open');
   setTimeout(() => document.getElementById('g-name').focus(), 250);
+}
+
+function renderAssetPicker() {
+  const wrap  = document.getElementById('g-assets-picker');
+  const empty = document.getElementById('g-assets-empty');
+  if (!assets.length) {
+    wrap.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  const chipClassMap = { Crypto:'chip-crypto', Stock:'chip-stock', ETF:'chip-etf', FCI:'chip-fci', Bond:'chip-bond', Cash:'chip-cash', Other:'chip-other' };
+  wrap.innerHTML = assets.map(a => {
+    const selected = goalLinkedAssetIds.includes(a.id);
+    const chipCls = chipClassMap[a.type] || 'chip-other';
+    return `
+    <div class="asset-chip ${selected ? 'selected ' + chipCls : ''}" onclick="toggleGoalAssetLink('${esc(a.id)}')">
+      <span class="asset-chip-check"></span>
+      <span>${esc(a.name)}</span>
+    </div>`;
+  }).join('');
+}
+
+function toggleGoalAssetLink(assetId) {
+  const idx = goalLinkedAssetIds.indexOf(assetId);
+  if (idx >= 0) goalLinkedAssetIds.splice(idx, 1);
+  else goalLinkedAssetIds.push(assetId);
+  renderAssetPicker();
+  applyGoalCurrentLockUI();
+}
+
+function applyGoalCurrentLockUI() {
+  const input = document.getElementById('g-current');
+  const label = document.getElementById('g-current-label');
+  if (goalLinkedAssetIds.length) {
+    const sum = sumLinkedAssets(goalLinkedAssetIds, document.getElementById('g-currency').value);
+    input.value = parseFloat(sum.toFixed(2));
+    input.disabled = true;
+    input.style.opacity = '0.6';
+    label.innerHTML = 'Ahorrado hasta hoy <span style="font-weight:300;text-transform:none;letter-spacing:0;color:var(--purple);">(suma automática de activos vinculados)</span>';
+  } else {
+    input.disabled = false;
+    input.style.opacity = '1';
+    label.textContent = 'Ahorrado hasta hoy';
+  }
+}
+
+function sumLinkedAssets(assetIds, targetCurrency) {
+  const linked = assets.filter(a => assetIds.includes(a.id));
+  const totalARSVal = linked.reduce((s, a) => s + toARSval(a), 0);
+  return targetCurrency === 'USD' ? totalARSVal / safeRate() : totalARSVal;
 }
 
 function closeGoalModal() {
@@ -1081,14 +1177,19 @@ function saveGoal() {
     return;
   }
   const wasEditing = !!editingGoalId;
+  const currency = document.getElementById('g-currency').value;
+  const currentVal = goalLinkedAssetIds.length
+    ? sumLinkedAssets(goalLinkedAssetIds, currency)
+    : parseFloat(document.getElementById('g-current').value) || 0;
   const goal = {
     id:        editingGoalId || uid(),
     emoji:     document.getElementById('g-emoji').value.trim() || '🎯',
     name,
     target,
-    current:   Math.min(Math.max(parseFloat(document.getElementById('g-current').value) || 0, 0), target),
-    currency:  document.getElementById('g-currency').value,
+    current:   Math.min(Math.max(currentVal, 0), target),
+    currency,
     monthly:   Math.max(parseFloat(document.getElementById('g-monthly').value) || 0, 0),
+    linkedAssetIds: [...goalLinkedAssetIds],
     createdAt: editingGoalId
       ? (goals.find(g => g.id === editingGoalId)?.createdAt || new Date().toISOString())
       : new Date().toISOString(),
