@@ -652,15 +652,40 @@ function renderAssets() {
   let surplus = 0;
 
   if (hasTargets) {
-    // New total after investing this month's budget
-    const newTotal = totARS + budARS;
-    // Each asset's aporte = its target % of the NEW total, minus what it already has
-    // Can be negative if the asset is overweight even relative to the new total — clamp to 0
-    const rawAportes = assets.map(a => (newTotal * ((a.targetPct || 0) / 100)) - toARSval(a));
-    computedAportes = rawAportes.map(v => Math.max(v, 0));
-    // Any budget left over after all targets are satisfied (e.g. target % doesn't sum to 100%)
-    const totalAssigned = computedAportes.reduce((s, v) => s + v, 0);
-    surplus = Math.max(budARS - totalAssigned, 0);
+    // "Need" = how much each asset is short of its target TODAY (before adding this month's budget)
+    const needs = assets.map(a => Math.max(totARS * ((a.targetPct || 0) / 100) - toARSval(a), 0));
+    const totalNeed = needs.reduce((s, n) => s + n, 0);
+
+    if (totalNeed > 0) {
+      // Distribute the budget proportionally to need, capped per-asset so nobody
+      // ever receives more than they actually need — the sum always equals the budget exactly.
+      let remaining = budARS;
+      computedAportes = new Array(assets.length).fill(0);
+      let stillOpen = needs.map(n => n > 0);
+      let safety = 0;
+      while (remaining > 0.01 && stillOpen.some(Boolean) && safety < assets.length + 1) {
+        safety++;
+        const openNeedSum = needs.reduce((s, n, i) => stillOpen[i] ? s + n : s, 0);
+        if (openNeedSum <= 0) break;
+        let distributedThisRound = 0;
+        assets.forEach((a, i) => {
+          if (!stillOpen[i]) return;
+          const share = remaining * (needs[i] / openNeedSum);
+          const cap = needs[i] - computedAportes[i];
+          const give = Math.min(share, cap);
+          computedAportes[i] += give;
+          distributedThisRound += give;
+          if (computedAportes[i] >= needs[i] - 0.01) stillOpen[i] = false;
+        });
+        remaining -= distributedThisRound;
+        if (distributedThisRound < 0.01) break;
+      }
+      surplus = Math.max(remaining, 0);
+    } else {
+      // Nobody needs anything today — entire budget is unassigned surplus
+      computedAportes = assets.map(() => 0);
+      surplus = budARS;
+    }
   } else {
     // No targets set — split equally, no cap since there's no "need" to measure against
     computedAportes = assets.map(() => budARS / assets.length);
