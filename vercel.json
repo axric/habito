@@ -2,27 +2,22 @@
   "version": 2,
   "routes": [
     {
-      "comment": "Serve login screen at root",
       "src": "^/$",
       "dest": "/index.html"
     },
     {
-      "comment": "Protect dashboard — redirect to login if accessed directly without session (client-side guard in requireAuth())",
       "src": "^/dashboard(\\.html)?$",
       "dest": "/dashboard.html"
     },
     {
-      "comment": "JS modules",
       "src": "^/js/(.*)$",
       "dest": "/js/$1"
     },
     {
-      "comment": "CSS",
       "src": "^/css/(.*)$",
       "dest": "/css/$1"
     },
     {
-      "comment": "Fallback — anything else goes to login",
       "src": "^/(.*)$",
       "dest": "/index.html"
     }
