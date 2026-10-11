@@ -1138,17 +1138,18 @@ function showToast(msg) {
 
 // ── ADVISOR IA ────────────────────────────────────────────────
 const QUESTIONS = [
-  { id:'horizon', text:'¿Cuál es tu horizonte de planificación?', input:true },
+  { id:'horizon', text:'¿Cuál es tu horizonte de inversión?', options:['1 año','3 años','5 años','10 años'] },
   { id:'risk',    text:'¿Cómo definirías tu tolerancia al riesgo?', options:['🛡️ Conservador — prefiero no perder','⚖️ Moderado — acepto algo de riesgo','🚀 Agresivo — busco máximo rendimiento'] },
-  { id:'referenceCurrency', text:'¿Cuál es tu moneda de referencia?', input:true },
-  { id:'residency', text:'¿Cuál es tu residencia fiscal o mercado principal?', input:true },
+  { id:'residency', text:'Por las monedas de tus activos, estos podrían ser tus mercados. ¿Cuál corresponde a tu residencia fiscal?', dynamicOptions:'residency' },
   { id:'objective', text:'¿Cuál es tu objetivo principal de inversión?', input:true },
   { id:'secondaryObjectives', text:'¿Tenés objetivos secundarios?', input:true },
   { id:'toleratedDrawdown', text:'¿Qué caída temporal de tu cartera tolerarías?', input:true },
-  { id:'style', text:'¿Cómo describirías tu estilo de inversión?', input:true },
-  { id:'contributionStrategy', text:'¿Qué estrategia usás para tus aportes y rebalanceos?', input:true },
-  { id:'preferredAssets', text:'¿Qué tipos de activos preferís?', input:true },
-  { id:'restrictions', text:'¿Qué restricciones o límites querés respetar?', input:true },
+  {
+    id:'restrictions',
+    text:'¿Qué restricciones querés aplicar? Podés elegir varias.',
+    multiple:true,
+    options:['Sin apalancamiento','Límite de concentración','Limitar exposición a cripto','Excluir activos o sectores','Priorizar liquidez','Otra','Ninguna'],
+  },
 ];
 
 const ADVISOR_FOLLOW_UPS = [
@@ -1174,13 +1175,25 @@ function askQuestion(idx) {
   showAiMsg(q.text, false);
   const onAnswer = answer => {
     aiProfile[q.id] = answer;
-    showAiMsg(answer, true);
+    showAiMsg(Array.isArray(answer) ? answer.join(', ') : answer, true);
     const next = idx + 1;
     if (next < QUESTIONS.length) setTimeout(() => askQuestion(next), 400);
     else setTimeout(() => runAnalysis(), 400);
   };
   if (q.input) showTextQuestion(onAnswer);
-  else showOptions(q.options, onAnswer);
+  else if (q.multiple) showMultiSelect(q.options, onAnswer);
+  else showOptions(getQuestionOptions(q), onAnswer);
+}
+
+function getQuestionOptions(question) {
+  if (question.dynamicOptions !== 'residency') return question.options;
+  const countryByCurrency = {
+    ARS:'Argentina', CLP:'Chile', USD:'Estados Unidos', MXN:'México',
+    BRL:'Brasil', COP:'Colombia', PEN:'Perú', UYU:'Uruguay',
+    PYG:'Paraguay', BOB:'Bolivia',
+  };
+  const countries = [...new Set(assets.map(asset => countryByCurrency[asset.currency]).filter(Boolean))];
+  return [...countries, 'Otro / No informado'];
 }
 
 function showTextQuestion(onAnswer) {
@@ -1213,12 +1226,65 @@ function showTextQuestion(onAnswer) {
   input.focus();
 }
 
+function showMultiSelect(options, onAnswer) {
+  const wrap = document.getElementById('ai-options');
+  wrap.innerHTML = '';
+  const row = document.createElement('div');
+  row.className = 'ai-options-wrap';
+  const selected = new Set();
+  options.forEach(option => {
+    const button = document.createElement('button');
+    button.className = 'ai-opt-btn';
+    button.textContent = option;
+    button.setAttribute('aria-pressed', 'false');
+    button.addEventListener('click', () => {
+      if (option === 'Ninguna') {
+        selected.clear();
+        selected.add(option);
+      } else {
+        selected.delete('Ninguna');
+        if (selected.has(option)) selected.delete(option);
+        else selected.add(option);
+      }
+      row.querySelectorAll('.ai-opt-btn').forEach(item => {
+        const active = selected.has(item.textContent);
+        item.classList.toggle('selected', active);
+        item.setAttribute('aria-pressed', String(active));
+      });
+      otherInput.hidden = !selected.has('Otra');
+    });
+    row.appendChild(button);
+  });
+  const otherInput = document.createElement('input');
+  otherInput.className = 'ai-text-input';
+  otherInput.type = 'text';
+  otherInput.maxLength = 120;
+  otherInput.placeholder = 'Especificá otra restricción';
+  otherInput.hidden = true;
+  const submit = document.createElement('button');
+  submit.className = 'ai-opt-btn';
+  submit.textContent = 'Continuar';
+  submit.addEventListener('click', () => {
+    if (submit.disabled) return;
+    submit.disabled = true;
+    let answers = [...selected];
+    if (selected.has('Otra') && otherInput.value.trim()) {
+      answers = answers.filter(answer => answer !== 'Otra');
+      answers.push(`Otra: ${otherInput.value.trim()}`);
+    }
+    onAnswer(answers.length ? answers : ['No informado']);
+  });
+  row.append(otherInput, submit);
+  wrap.appendChild(row);
+}
+
 async function runAnalysis() {
   showOptions([], null);
   showAiMsg('Analizando tu portafolio', false, true);
   aiProfile.monthlySavings = budget > 0
     ? (budgetCurrency === 'USD' ? fmtUSD(budget) : fmtARS(budget))
     : 'No informado';
+  aiProfile.referenceCurrency = inferReferenceCurrency();
   const ctx = buildPortfolioContext();
   const system = `Sos un analista de carteras para inversores latinoamericanos. Analizás solamente el perfil y los activos provistos; no sugieras activos nuevos, operaciones, compras, ventas ni pasos de seguimiento. Respondé en español como JSON válido, sin Markdown ni texto fuera del JSON. No inventes datos personales; los datos confirmados del inversor se indican explícitamente más abajo.
 
@@ -1250,7 +1316,9 @@ Devolvé exactamente este objeto:
 }
 
 Puntajes entre 1 y 10. Ambos son provisionales, cualitativos y no estandarizados; explicalo. Si no hay activos, decí que todavía no es posible puntuar la cartera ni identificar fortalezas/riesgos de posiciones, y no recomiendes productos.
-En la Ficha del inversor, usa únicamente las respuestas provistas para describir los datos personales. No infieras residencia, moneda de referencia, objetivos, estilo, estrategia, preferencias ni restricciones desde las tenencias. Para cualquier respuesta igual a "No informado", conserva ese valor.
+Usa el horizonte, tolerancia, residencia elegida, objetivos, caída tolerada y restricciones seleccionadas por el usuario. La moneda de referencia se infiere de la moneda que representa la mayor parte del valor de cartera y debe identificarse como inferida. Si los pesos monetarios están mezclados sin mayoría, usa "Mixta / No informada".
+Determina el estilo como inferencia de la composición de activos y etiquétalo como "Inferido de la cartera". Determina los activos preferidos solo como inferencia de las tenencias, etiquétalos como "Inferidos de las tenencias; no confirmados" y no supongas preferencias explícitas.
+Propón una estrategia de aportes y rebalanceo basada en la cartera, el horizonte y el riesgo. El campo "contributionStrategy" es una sugerencia pendiente de confirmación; no afirmes que el usuario ya la eligió. Conserva las restricciones seleccionadas sin inventar otras.
 
 Respuestas del cuestionario del usuario: ${JSON.stringify(aiProfile)}. El campo monthlySavings ya refleja el monto mensual cargado en Aporte mensual; no lo reemplaces ni lo estimes.
 Cartera actual en USD equivalente:
@@ -1260,10 +1328,15 @@ Distribución por activo (objetivo vs. actual):
 ${JSON.stringify(assets.map(asset => ({ name: asset.name, type: asset.type, currency: asset.currency, broker: asset.broker || 'No informado', targetPct: asset.targetPct || 0, currentPct: totalARS() > 0 ? Number(((toARSval(asset) / totalARS()) * 100).toFixed(1)) : 0 })))}`;
   const report = await callAI(system, 'Generá la Ficha del inversor y el Resumen ejecutivo de la cartera. Analizá la cartera sin ofrecer seguimiento conversacional ni recomendaciones de compra/venta.');
   if (report) {
-    advisorReport = { ...report, generatedAt: new Date().toISOString() };
+    advisorReport = {
+      ...report,
+      generatedAt: new Date().toISOString(),
+      strategyConfirmed: false,
+      investorProfile: { ...report.investorProfile, selectedContributionStrategy: '' },
+    };
     await syncUserData();
     renderAdvisorReport(advisorReport);
-    showAdvisorFollowUps();
+    askContributionStrategy();
   }
   document.getElementById('ai-restart').style.display = 'block';
 }
@@ -1323,6 +1396,49 @@ function buildPortfolioContext() {
     const usdEquivalent = fmtUSD(toARSval(a) / safeRate());
     return `- ${a.name} (${TYPE_LABEL_MAP[a.type] || 'Otro'})${broker}: ${value} (${usdEquivalent} equivalente) | Obj ${a.targetPct || 0}% | Real ${real}%`;
   }).join('\n');
+}
+
+function inferReferenceCurrency() {
+  const totals = assets.reduce((result, asset) => {
+    const currency = asset.currency || 'Unknown';
+    result[currency] = (result[currency] || 0) + (Number(asset.balance) || 0);
+    return result;
+  }, {});
+  const currencies = Object.keys(totals);
+  if (!currencies.length) return 'No informada';
+  if (currencies.length === 1) return `${currencies[0]} (inferida de tus activos)`;
+  if (currencies.some(currency => !['ARS', 'USD'].includes(currency))) return 'Mixta / No informada';
+  if (usdRate <= 0) return 'Mixta / No informada';
+  const ranked = [
+    ['USD', totals.USD || 0],
+    ['ARS', (totals.ARS || 0) / safeRate()],
+  ].sort((a, b) => b[1] - a[1]);
+  if (ranked[0][1] <= 0) return 'No informada';
+  if (ranked[1] && ranked[0][1] === ranked[1][1]) return 'Mixta / No informada';
+  return `${ranked[0][0]} (inferida por mayoría del valor de cartera)`;
+}
+
+function askContributionStrategy() {
+  const suggestion = formatProfileValue(advisorReport.investorProfile.contributionStrategy);
+  showAiMsg(`Estrategia sugerida según tu cartera: ${suggestion}. ¿Querés elegirla?`, false);
+  const alternatives = [
+    `Aceptar sugerencia: ${suggestion}`,
+    'DCA mensual',
+    'DCA + rebalanceo por umbrales',
+    'Aportes periódicos + rebalanceo trimestral',
+    'Otra / No informado',
+  ];
+  showOptions(alternatives, async selection => {
+    const chosen = selection.startsWith('Aceptar sugerencia:')
+      ? suggestion
+      : selection;
+    advisorReport.investorProfile.selectedContributionStrategy = chosen;
+    advisorReport.strategyConfirmed = true;
+    showAiMsg(chosen, true);
+    await syncUserData();
+    renderAdvisorReport(advisorReport);
+    showAdvisorFollowUps();
+  });
 }
 
 function showAdvisorFollowUps() {
@@ -1486,9 +1602,10 @@ function renderAdvisorReport(report) {
     ['Objetivo principal', formatProfileValue(report.investorProfile.objective)],
     ['Objetivos secundarios', formatProfileValue(report.investorProfile.secondaryObjectives)],
     ['Caída temporal tolerada', formatProfileValue(report.investorProfile.toleratedDrawdown)],
-    ['Estilo', formatProfileValue(report.investorProfile.style)],
-    ['Estrategia de aportes', formatProfileValue(report.investorProfile.contributionStrategy)],
-    ['Activos preferidos', formatProfileValue(report.investorProfile.preferredAssets)],
+    ['Estilo (inferido)', formatProfileValue(report.investorProfile.style)],
+    ['Activos inferidos de las tenencias', formatProfileValue(report.investorProfile.preferredAssets)],
+    ['Estrategia sugerida', formatProfileValue(report.investorProfile.contributionStrategy)],
+    ...(report.strategyConfirmed ? [['Estrategia elegida', formatProfileValue(report.investorProfile.selectedContributionStrategy)]] : []),
     ['Restricciones', formatProfileValue(report.investorProfile.restrictions)],
     ['Ahorro mensual aproximado', formatProfileValue(report.investorProfile.monthlySavings)],
   ].forEach(([label, value]) => {
@@ -1595,7 +1712,8 @@ window.habitoStartDashboard = async user => {
     document.getElementById('ai-idle').style.display = 'none';
     document.getElementById('ai-session').style.display = 'block';
     renderAdvisorReport(advisorReport);
-    showAdvisorFollowUps();
+    if (advisorReport.strategyConfirmed === false) askContributionStrategy();
+    else showAdvisorFollowUps();
     document.getElementById('ai-restart').style.display = 'block';
   }
   if (!saved) syncUserData();

@@ -128,6 +128,8 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
 .ai-text-input:focus{border-color:var(--purple);}
 .ai-opt-btn{background:var(--bg-dark);border:1px solid var(--selection);border-radius:var(--r-md);color:var(--fg);font-family:'Poppins',sans-serif;font-size:11px;font-weight:500;padding:10px 14px;cursor:pointer;text-align:left;transition:all .15s;}
 .ai-opt-btn:hover{border-color:var(--purple);color:var(--purple);}
+.ai-opt-btn.selected{border-color:var(--purple);color:var(--purple);background:rgba(189,147,249,0.1);}
+.ai-opt-btn:disabled{opacity:.55;cursor:wait;}
 .ai-dots::after{content:'...';animation:dots 1.2s step-end infinite;}
 @keyframes dots{0%{content:'.';}33%{content:'..';}66%{content:'...';}}
 .goal-card{background:var(--bg-dark);border:1px solid var(--selection);border-radius:var(--r-lg);padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:border-color .15s;}
