@@ -1191,7 +1191,7 @@ function askAccountsQuestion() {
 async function runStarterRecommendation() {
   aiPhase = 'analysis';
   showOptions([], null);
-  showAiMsg('Preparando tu recomendación inicial<span class="ai-dots"></span>', false, true);
+  showAiMsg('Preparando tu recomendación inicial', false, true);
   const sys = `Sos un advisor financiero directo para inversores latinoamericanos principiantes. Respondés en español sin jerga. Máximo 250 palabras. Sin emojis en el análisis.\nPerfil del inversor: horizonte ${aiProfile.horizon}, riesgo ${aiProfile.risk}, ahorro mensual ${aiProfile.monthly}, cuentas disponibles: ${aiProfile.accounts?.join(', ') || 'no especificado'}.\nEl inversor NO tiene ningún activo todavía. Sugerí un portafolio inicial concreto y simple, adaptado a su perfil y cuentas. Sé específico sobre qué tipo de activos considerar y en qué proporción aproximada. No menciones plataformas específicas.`;
   await callAI(sys, 'No tengo ninguna inversión todavía. ¿Por dónde empiezo?');
   showStarterFollowupOptions();
@@ -1200,7 +1200,7 @@ async function runStarterRecommendation() {
 async function runAnalysis() {
   aiPhase = 'analysis';
   showOptions([], null);
-  showAiMsg('Analizando tu portafolio<span class="ai-dots"></span>', false, true);
+  showAiMsg('Analizando tu portafolio', false, true);
   const ctx = buildPortfolioContext();
   const sys = `Sos un advisor financiero directo para inversores latinoamericanos principiantes. Respondés en español sin jerga. Máximo 200 palabras. Sin emojis en el análisis.\nPerfil: horizonte ${aiProfile.horizon}, riesgo ${aiProfile.risk}, ahorro mensual ${aiProfile.monthly}.\nPortafolio:\n${ctx}\nTipo de cambio: $${fmtNum(usdRate,0)} ARS/USD.`;
   await callAI(sys, 'Analizá mi portafolio y decime si está alineado con mi perfil. Indicá qué ajustar si hace falta.');
@@ -1220,7 +1220,7 @@ function showStarterFollowupOptions() {
 async function askFollowup(q) {
   showAiMsg(q, true);
   showOptions([], null);
-  showAiMsg('Consultando<span class="ai-dots"></span>', false, true);
+  showAiMsg('Consultando', false, true);
   const ctx = buildPortfolioContext();
   const sys = `Sos un advisor financiero directo para inversores latinoamericanos principiantes. Respondés en español sin jerga. Máximo 150 palabras.\nPerfil: horizonte ${aiProfile.horizon}, riesgo ${aiProfile.risk}.\n${ctx ? 'Portafolio:\n' + ctx : 'El inversor no tiene activos aún.'}`;
   aiHistory.push({ role:'user', content: q });
@@ -1233,19 +1233,29 @@ async function callAI(system, userMsg) {
     ? [...aiHistory, { role:'user', content: userMsg }]
     : aiHistory.length ? aiHistory : [{ role:'user', content: 'Continuá con el análisis.' }];
   try {
-    const res  = await fetch('https://api.anthropic.com/v1/messages', {
+    const { supabase } = await import('/js/auth.js');
+    const { data, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    if (!data.session) throw new Error('Tu sesión expiró. Iniciá sesión nuevamente.');
+
+    const res = await fetch('/api/advisor', {
       method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:1000, system, messages }),
+      headers:{
+        'Content-Type':'application/json',
+        Authorization:`Bearer ${data.session.access_token}`,
+      },
+      body: JSON.stringify({ system, messages }),
     });
-    const data = await res.json();
-    const text = data.content?.map(b=>b.text||'').join('') || 'Sin respuesta.';
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Error al conectar con el advisor.');
+    const text = result.content || 'Sin respuesta.';
     removeLoadingMsg();
     showAiMsg(text, false);
     aiHistory.push({ role:'assistant', content: text });
   } catch(e) {
     removeLoadingMsg();
-    showAiMsg('Error al conectar con el advisor. Intentá de nuevo.', false);
+    console.error('Advisor request failed.', e);
+    showAiMsg(e.message || 'Error al conectar con el advisor. Intentá de nuevo.', false);
   }
   document.getElementById('ai-restart').style.display = 'block';
 }
@@ -1280,7 +1290,13 @@ function showAiMsg(text, isUser, isLoading) {
     div.appendChild(lbl);
   }
   const txt = document.createElement('div');
-  if (isUser) { txt.textContent = text; } else { txt.innerHTML = text.replace(/\n/g,'<br>'); }
+  txt.className = 'ai-msg-text';
+  txt.textContent = text;
+  if (isLoading) {
+    const dots = document.createElement('span');
+    dots.className = 'ai-dots';
+    txt.appendChild(dots);
+  }
   div.appendChild(txt);
   wrap.appendChild(div);
   div.scrollIntoView({ behavior:'smooth', block:'end' });

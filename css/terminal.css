@@ -107,6 +107,7 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
 .ai-cta-btn{background:transparent;border:1px solid var(--purple);border-radius:var(--r-md);color:var(--purple);font-family:'Poppins',sans-serif;font-size:13px;font-weight:700;padding:12px 24px;cursor:pointer;transition:background .15s;width:100%;}
 .ai-cta-btn:hover{background:rgba(189,147,249,0.1);}
 .ai-msg{background:var(--bg-dark);border:1px solid var(--selection);border-radius:var(--r-lg);padding:12px 14px;margin-bottom:8px;font-size:11px;line-height:1.7;color:var(--fg);}
+.ai-msg-text{white-space:pre-line;}
 .ai-msg.ai-user{background:rgba(189,147,249,0.08);border-color:rgba(189,147,249,0.25);color:var(--muted);font-size:10px;}
 .ai-msg-label{font-size:8px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;margin-bottom:5px;color:var(--purple);}
 .ai-options-wrap{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
