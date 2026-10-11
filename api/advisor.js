@@ -71,7 +71,7 @@ module.exports = async function handler(request, response) {
       },
       body: JSON.stringify({
         model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-        max_tokens: 1000,
+        max_completion_tokens: 600,
         messages: [
           { role: 'system', content: body.system },
           ...body.messages,
@@ -81,7 +81,7 @@ module.exports = async function handler(request, response) {
 
     const result = await aiResponse.json();
     if (!aiResponse.ok) {
-      console.error('OpenAI advisor request failed.', aiResponse.status, result.error?.type || result.error?.code);
+      console.error('OpenAI advisor request failed.', aiResponse.status, result.error?.code, result.error?.message);
       response.status(502).json({ error: 'The advisor could not complete the request. Please try again later.' });
       return;
     }
