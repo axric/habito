@@ -1143,7 +1143,7 @@ const QUESTIONS = [
   { id:'residency', text:'Por las monedas de tus activos, estos podrían ser tus mercados. ¿Cuál corresponde a tu residencia fiscal?', dynamicOptions:'residency' },
   { id:'objective', text:'¿Cuál es tu objetivo principal de inversión?', input:true },
   { id:'secondaryObjectives', text:'¿Tenés objetivos secundarios?', input:true },
-  { id:'toleratedDrawdown', text:'¿Qué caída temporal de tu cartera tolerarías?', input:true },
+  { id:'toleratedDrawdown', text:'¿Qué caída porcentual de tu cartera tolerarías?', options:['10%','25%','50%','No informado'] },
   {
     id:'restrictions',
     text:'¿Qué restricciones querés aplicar? Podés elegir varias.',
@@ -1316,9 +1316,9 @@ Devolvé exactamente este objeto:
 }
 
 Puntajes entre 1 y 10. Ambos son provisionales, cualitativos y no estandarizados; explicalo. Si no hay activos, decí que todavía no es posible puntuar la cartera ni identificar fortalezas/riesgos de posiciones, y no recomiendes productos.
-Usa el horizonte, tolerancia, residencia elegida, objetivos, caída tolerada y restricciones seleccionadas por el usuario. La moneda de referencia se infiere de la moneda que representa la mayor parte del valor de cartera y debe identificarse como inferida. Si los pesos monetarios están mezclados sin mayoría, usa "Mixta / No informada".
-Determina el estilo como inferencia de la composición de activos y etiquétalo como "Inferido de la cartera". Determina los activos preferidos solo como inferencia de las tenencias, etiquétalos como "Inferidos de las tenencias; no confirmados" y no supongas preferencias explícitas.
-Propón una estrategia de aportes y rebalanceo basada en la cartera, el horizonte y el riesgo. El campo "contributionStrategy" es una sugerencia pendiente de confirmación; no afirmes que el usuario ya la eligió. Conserva las restricciones seleccionadas sin inventar otras.
+Usa el horizonte, tolerancia, residencia elegida, objetivos, caída porcentual tolerada y restricciones seleccionadas por el usuario. La moneda de referencia se infiere de la moneda que representa la mayor parte del valor de cartera, sin añadir aclaraciones entre paréntesis. Si los pesos monetarios están mezclados sin mayoría, usa "Mixta / No informada".
+Determina el estilo como inferencia de la composición de activos y determina los activos preferidos solo como inferencia de las tenencias. Devuelve los valores directamente, sin aclarar que son inferidos y sin suponer preferencias explícitas.
+Propón una estrategia de aportes y rebalanceo basada en la cartera, el horizonte y el riesgo. Devuelve solo la estrategia, sin prefijos como "sugerida" o "pendiente de confirmación". Conserva las restricciones seleccionadas sin inventar otras.
 
 Respuestas del cuestionario del usuario: ${JSON.stringify(aiProfile)}. El campo monthlySavings ya refleja el monto mensual cargado en Aporte mensual; no lo reemplaces ni lo estimes.
 Cartera actual en USD equivalente:
@@ -1420,16 +1420,16 @@ function inferReferenceCurrency() {
 
 function askContributionStrategy() {
   const suggestion = formatProfileValue(advisorReport.investorProfile.contributionStrategy);
-  showAiMsg(`Estrategia sugerida según tu cartera: ${suggestion}. ¿Querés elegirla?`, false);
+  showAiMsg(`Estrategia de aportes propuesta según tu cartera: ${suggestion}. ¿Cuál preferís?`, false);
   const alternatives = [
-    `Aceptar sugerencia: ${suggestion}`,
+    `Usar esta estrategia: ${suggestion}`,
     'DCA mensual',
     'DCA + rebalanceo por umbrales',
     'Aportes periódicos + rebalanceo trimestral',
     'Otra / No informado',
   ];
   showOptions(alternatives, async selection => {
-    const chosen = selection.startsWith('Aceptar sugerencia:')
+    const chosen = selection.startsWith('Usar esta estrategia:')
       ? suggestion
       : selection;
     advisorReport.investorProfile.selectedContributionStrategy = chosen;
@@ -1591,7 +1591,7 @@ function renderAdvisorReport(report) {
 
   const profileCard = document.createElement('section');
   profileCard.className = 'advisor-report-card';
-  appendReportHeading(profileCard, 'Ficha del inversor');
+  appendReportHeading(profileCard, 'Perfil de inversión');
   const details = document.createElement('dl');
   details.className = 'advisor-profile-grid';
   [
@@ -1601,13 +1601,17 @@ function renderAdvisorReport(report) {
     ['Residencia fiscal / mercado', formatProfileValue(report.investorProfile.residency)],
     ['Objetivo principal', formatProfileValue(report.investorProfile.objective)],
     ['Objetivos secundarios', formatProfileValue(report.investorProfile.secondaryObjectives)],
-    ['Caída temporal tolerada', formatProfileValue(report.investorProfile.toleratedDrawdown)],
-    ['Estilo (inferido)', formatProfileValue(report.investorProfile.style)],
-    ['Activos inferidos de las tenencias', formatProfileValue(report.investorProfile.preferredAssets)],
-    ['Estrategia sugerida', formatProfileValue(report.investorProfile.contributionStrategy)],
-    ...(report.strategyConfirmed ? [['Estrategia elegida', formatProfileValue(report.investorProfile.selectedContributionStrategy)]] : []),
+    ['Caída porcentual tolerada', formatProfileValue(report.investorProfile.toleratedDrawdown)],
+    ['Estilo de inversión', formatProfileValue(report.investorProfile.style)],
+    ['Estrategia de aportes', formatProfileValue(report.strategyConfirmed
+      ? report.investorProfile.selectedContributionStrategy
+      : report.investorProfile.contributionStrategy)],
+    ['Activos preferidos', formatProfileValue(report.investorProfile.preferredAssets)],
     ['Restricciones', formatProfileValue(report.investorProfile.restrictions)],
     ['Ahorro mensual aproximado', formatProfileValue(report.investorProfile.monthlySavings)],
+    ['Puntaje de perfil', report.investorProfile.riskScore == null
+      ? 'Pendiente de evaluación'
+      : `${report.investorProfile.riskScore}/10 — ${formatProfileValue(report.investorProfile.riskScoreNote)}`],
   ].forEach(([label, value]) => {
     const row = document.createElement('div');
     const term = document.createElement('dt');
@@ -1618,7 +1622,6 @@ function renderAdvisorReport(report) {
     details.appendChild(row);
   });
   profileCard.appendChild(details);
-  appendReportScore(profileCard, 'Puntaje de riesgo', report.investorProfile.riskScore, report.investorProfile.riskScoreNote);
 
   const summaryCard = document.createElement('section');
   summaryCard.className = 'advisor-report-card';
@@ -1635,8 +1638,14 @@ function renderAdvisorReport(report) {
 }
 
 function formatProfileValue(value) {
-  if (Array.isArray(value)) return value.length ? value.join(', ') : 'No informado';
-  return typeof value === 'string' && value.trim() ? value : 'No informado';
+  if (Array.isArray(value)) return value.length ? value.map(formatProfileValue).join(', ') : 'No informado';
+  if (typeof value !== 'string' || !value.trim()) return 'No informado';
+  return value
+    .replace(/\s*\(inferida(?:\s+[^)]*)?\)/gi, '')
+    .replace(/\s*[—-]?\s*inferid[oa]s? de las tenencias(?:;[^.]*)?\.?/gi, '')
+    .replace(/^sugerencia pendiente de confirmación:\s*/i, '')
+    .replace(/^estrategia sugerida(?: según tu cartera)?:\s*/i, '')
+    .trim() || 'No informado';
 }
 
 function appendReportHeading(parent, text) {
