@@ -87,10 +87,10 @@
       </div>
     </div>
     <div id="ai-session" style="display:none;">
-      <div id="ai-messages"></div>
+      <div id="ai-report"></div>
       <div id="ai-options" style="margin-top:8px;"></div>
       <div id="ai-restart" style="display:none;text-align:center;margin-top:16px;">
-        <button class="btn" onclick="resetAdvisor()" style="font-size:11px;padding:7px 16px;">Empezar de nuevo</button>
+        <button class="btn" onclick="startAdvisor()" style="font-size:11px;padding:7px 16px;">Actualizar análisis</button>
       </div>
     </div>
   </div>
@@ -246,6 +246,7 @@ let currentTab      = 'portfolio';
 let pendingDeleteFn = null;
 let aporteDay       = 1;
 let aporteState     = { month: '', amounts: {}, confirmed: {} };
+let advisorReport   = null;
 
 // Shared type → badge/label maps, used in both portfolio rows and goal linked-asset chips
 const TYPE_BADGE_MAP = { Crypto:'badge-crypto', Stock:'badge-stock', ETF:'badge-etf', FCI:'badge-fci', Bond:'badge-bond', Cash:'badge-cash', Other:'badge-other' };
@@ -264,12 +265,12 @@ function setUserStorageScope(userId) {
 }
 
 function currentUserData() {
-  return { assets, rate: usdRate, budget, budgetCurrency, rebalanceo: showRebalanceo, aporteDay, aporteState, goals, streak: localStorage.getItem(SK.streak) };
+  return { assets, rate: usdRate, budget, budgetCurrency, rebalanceo: showRebalanceo, aporteDay, aporteState, goals, streak: localStorage.getItem(SK.streak), advisorReport };
 }
 
 function syncUserData() {
   if (!currentUserId) return;
-  window.HabitoData.save(currentUserId, currentUserData()).catch(error => {
+  return window.HabitoData.save(currentUserId, currentUserData()).catch(error => {
     console.error('Unable to save user data.', error);
     showToast('No se pudieron sincronizar tus datos.');
   });
@@ -1142,21 +1143,19 @@ const QUESTIONS = [
   { id:'monthly', text:'¿Cuánto podés ahorrar por mes aproximadamente?', options:['Menos de u$s 500','u$s 500 – 2.000','u$s 2.000 – 5.000','Más de u$s 5.000'] },
 ];
 
-const QUESTION_ACCOUNTS = {
-  id: 'accounts',
-  text: '¿Con qué tipo de cuenta contás para invertir? Podés elegir más de una.',
-  options: ['🏦 Banco tradicional','📱 Fintech','📈 Broker','🌐 Exchange de cripto','Ninguna todavía'],
-};
+const ADVISOR_FOLLOW_UPS = [
+  { id:'risk', label:'¿Cómo reduzco el riesgo?' },
+  { id:'asset', label:'¿Qué activo agregar este mes?' },
+  { id:'diversification', label:'¿Estoy bien diversificado?' },
+];
 
-let aiProfile = {}, aiHistory = [], aiPhase = 'idle';
-let aiEmptyPortfolio = false;
+let aiProfile = {};
 
 function startAdvisor() {
-  aiEmptyPortfolio = !assets.length;
-  aiProfile = {}; aiHistory = []; aiPhase = 'interview';
+  aiProfile = {};
   document.getElementById('ai-idle').style.display    = 'none';
   document.getElementById('ai-session').style.display = 'block';
-  document.getElementById('ai-messages').innerHTML    = '';
+  document.getElementById('ai-report').innerHTML      = '';
   document.getElementById('ai-options').innerHTML     = '';
   document.getElementById('ai-restart').style.display = 'none';
   askQuestion(0);
@@ -1171,67 +1170,63 @@ function askQuestion(idx) {
     const next = idx + 1;
     if (next < QUESTIONS.length) {
       setTimeout(() => askQuestion(next), 400);
-    } else if (aiEmptyPortfolio) {
-      setTimeout(() => askAccountsQuestion(), 400);
     } else {
       setTimeout(() => runAnalysis(), 400);
     }
   });
 }
 
-function askAccountsQuestion() {
-  showAiMsg(QUESTION_ACCOUNTS.text, false);
-  showMultiSelect(QUESTION_ACCOUNTS.options, chosen => {
-    aiProfile.accounts = chosen;
-    showAiMsg(chosen.join(', '), true);
-    setTimeout(() => runStarterRecommendation(), 400);
-  });
-}
-
-async function runStarterRecommendation() {
-  aiPhase = 'analysis';
-  showOptions([], null);
-  showAiMsg('Preparando tu recomendación inicial', false, true);
-  const sys = `Sos un advisor financiero directo para inversores latinoamericanos principiantes. Respondés en español sin jerga. Máximo 250 palabras. Sin emojis en el análisis.\nPerfil del inversor: horizonte ${aiProfile.horizon}, riesgo ${aiProfile.risk}, ahorro mensual ${aiProfile.monthly}, cuentas disponibles: ${aiProfile.accounts?.join(', ') || 'no especificado'}.\nEl inversor NO tiene ningún activo todavía. Sugerí un portafolio inicial concreto y simple, adaptado a su perfil y cuentas. Sé específico sobre qué tipo de activos considerar y en qué proporción aproximada. No menciones plataformas específicas.`;
-  await callAI(sys, 'No tengo ninguna inversión todavía. ¿Por dónde empiezo?');
-  showStarterFollowupOptions();
-}
-
 async function runAnalysis() {
-  aiPhase = 'analysis';
   showOptions([], null);
   showAiMsg('Analizando tu portafolio', false, true);
   const ctx = buildPortfolioContext();
-  const sys = `Sos un advisor financiero directo para inversores latinoamericanos principiantes. Respondés en español sin jerga. Máximo 200 palabras. Sin emojis en el análisis.\nPerfil: horizonte ${aiProfile.horizon}, riesgo ${aiProfile.risk}, ahorro mensual ${aiProfile.monthly}.\nPortafolio:\n${ctx}\nTipo de cambio: $${fmtNum(usdRate,0)} ARS/USD.`;
-  await callAI(sys, 'Analizá mi portafolio y decime si está alineado con mi perfil. Indicá qué ajustar si hace falta.');
-  showFollowupOptions();
+  const system = `Sos un analista de carteras para inversores latinoamericanos. Analizás solamente el perfil y los activos provistos; no sugieras activos nuevos, operaciones, compras, ventas ni pasos de seguimiento. Respondé en español como JSON válido, sin Markdown ni texto fuera del JSON. No inventes datos personales: si el usuario no informó un dato, indicá "No informado". La moneda de referencia debe describirse como USD equivalente para comparar la cartera, no como preferencia del usuario. Distingue activos observados de preferencias confirmadas.
+
+Devolvé exactamente este objeto:
+{
+  "investorProfile": {
+    "riskProfile": "string",
+    "horizon": "string",
+    "referenceCurrency": "string",
+    "objective": "string",
+    "toleratedDrawdown": "string",
+    "style": "string",
+    "monthlySavings": "string",
+    "observedAssets": ["string"],
+    "preferredAssets": ["string"],
+    "restrictions": ["string"],
+    "riskScore": 1,
+    "riskScoreNote": "string"
+  },
+  "portfolioSummary": {
+    "strengths": ["string"],
+    "mainRisks": ["string"],
+    "priority": "string",
+    "portfolioScore": 1,
+    "portfolioScoreNote": "string"
+  }
 }
 
-function showStarterFollowupOptions() {
-  showOptions([
-    '¿Cómo empiezo a invertir paso a paso?',
-    '¿Qué porcentaje pongo en cada activo?',
-    '¿Qué riesgos tengo que considerar?',
-    '¿Cuándo debería revisar mi portafolio?',
-  ], chosen => askFollowup(chosen));
+Puntajes entre 1 y 10. Ambos son provisionales, cualitativos y no estandarizados; explicalo. Si no hay activos, decí que todavía no es posible puntuar la cartera ni identificar fortalezas/riesgos de posiciones, y no recomiendes productos.
+En "observedAssets" enumera los activos que aparecen en la cartera sin presentarlos como preferencias. Completa "preferredAssets" y "restrictions" solo con datos confirmados; si no se informaron, usa ["No informado"]. En "priority" resume el principal hallazgo de la composición actual, sin dar instrucciones de operación.
+
+Respuestas del cuestionario: horizonte ${aiProfile.horizon}; tolerancia al riesgo ${aiProfile.risk}; ahorro mensual aproximado ${aiProfile.monthly}. Moneda del presupuesto mensual: ${budgetCurrency}.
+Cartera actual en USD equivalente:
+${ctx || 'Sin activos registrados.'}
+Tipo de cambio usado: ${fmtNum(usdRate,0)} ARS/USD.
+Distribución por activo (objetivo vs. actual):
+${JSON.stringify(assets.map(asset => ({ name: asset.name, type: asset.type, currency: asset.currency, broker: asset.broker || 'No informado', targetPct: asset.targetPct || 0, currentPct: totalARS() > 0 ? Number(((toARSval(asset) / totalARS()) * 100).toFixed(1)) : 0 })))}`;
+  const report = await callAI(system, 'Generá la Ficha del inversor y el Resumen ejecutivo de la cartera. Analizá la cartera sin ofrecer seguimiento conversacional ni recomendaciones de compra/venta.');
+  if (report) {
+    advisorReport = { ...report, generatedAt: new Date().toISOString() };
+    await syncUserData();
+    renderAdvisorReport(advisorReport);
+    showAdvisorFollowUps();
+  }
   document.getElementById('ai-restart').style.display = 'block';
 }
 
-async function askFollowup(q) {
-  showAiMsg(q, true);
-  showOptions([], null);
-  showAiMsg('Consultando', false, true);
-  const ctx = buildPortfolioContext();
-  const sys = `Sos un advisor financiero directo para inversores latinoamericanos principiantes. Respondés en español sin jerga. Máximo 150 palabras.\nPerfil: horizonte ${aiProfile.horizon}, riesgo ${aiProfile.risk}.\n${ctx ? 'Portafolio:\n' + ctx : 'El inversor no tiene activos aún.'}`;
-  aiHistory.push({ role:'user', content: q });
-  await callAI(sys, null);
-  if (aiEmptyPortfolio) { showStarterFollowupOptions(); } else { showFollowupOptions(); }
-}
-
 async function callAI(system, userMsg) {
-  const messages = userMsg
-    ? [...aiHistory, { role:'user', content: userMsg }]
-    : aiHistory.length ? aiHistory : [{ role:'user', content: 'Continuá con el análisis.' }];
   try {
     const { supabase } = await import('/js/auth.js');
     const { data, error } = await supabase.auth.getSession();
@@ -1244,20 +1239,19 @@ async function callAI(system, userMsg) {
         'Content-Type':'application/json',
         Authorization:`Bearer ${data.session.access_token}`,
       },
-      body: JSON.stringify({ system, messages }),
+      body: JSON.stringify({ system, messages:[{ role:'user', content:userMsg }] }),
     });
     const result = await res.json();
     if (!res.ok) throw new Error(result.error || 'Error al conectar con el advisor.');
-    const text = result.content || 'Sin respuesta.';
+    if (!result.report) throw new Error('El advisor devolvió un informe incompleto. Intentá actualizar el análisis.');
     removeLoadingMsg();
-    showAiMsg(text, false);
-    aiHistory.push({ role:'assistant', content: text });
+    return result.report;
   } catch(e) {
     removeLoadingMsg();
     console.error('Advisor request failed.', e);
-    showAiMsg(e.message || 'Error al conectar con el advisor. Intentá de nuevo.', false);
+    document.getElementById('ai-report').textContent = e.message || 'Error al conectar con el advisor. Intentá de nuevo.';
+    return null;
   }
-  document.getElementById('ai-restart').style.display = 'block';
 }
 
 function buildPortfolioContext() {
@@ -1265,21 +1259,127 @@ function buildPortfolioContext() {
   return assets.map(a => {
     const real   = tot > 0 ? ((toARSval(a)/tot)*100).toFixed(1) : '0';
     const broker = a.broker ? ` (${a.broker})` : '';
-    return `- ${a.name}${broker}: ${a.currency==='USD'?fmtUSD(a.balance):fmtARS(a.balance)} | Obj ${a.targetPct}% | Real ${real}%`;
+    const value = a.currency === 'USD' ? fmtUSD(a.balance) : fmtARS(a.balance);
+    const usdEquivalent = fmtUSD(toARSval(a) / safeRate());
+    return `- ${a.name} (${TYPE_LABEL_MAP[a.type] || 'Otro'})${broker}: ${value} (${usdEquivalent} equivalente) | Obj ${a.targetPct || 0}% | Real ${real}%`;
   }).join('\n');
 }
 
-function showFollowupOptions() {
-  showOptions([
-    '¿Cómo reduzco el riesgo?',
-    '¿Qué activo agregar este mes?',
-    '¿Estoy bien diversificado?',
-    '¿Qué pasa si hay volatilidad en Argentina?',
-  ], chosen => askFollowup(chosen));
+function showAdvisorFollowUps() {
+  showOptions(ADVISOR_FOLLOW_UPS.map(question => question.label), label => {
+    const question = ADVISOR_FOLLOW_UPS.find(item => item.label === label);
+    if (question) askAdvisorFollowUp(question);
+  });
+}
+
+async function askAdvisorFollowUp(question) {
+  showOptions([], null);
+  showAiMsg(question.label, true);
+  showAiMsg('Preparando el análisis', false, true);
+
+  try {
+    const { supabase } = await import('/js/auth.js');
+    const { data, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    if (!data.session) throw new Error('Tu sesión expiró. Iniciá sesión nuevamente.');
+
+    const context = JSON.stringify({
+      investorProfile: advisorReport?.investorProfile || null,
+      assets: assets.map(asset => ({
+        name: asset.name,
+        type: TYPE_LABEL_MAP[asset.type] || 'Otro',
+        broker: asset.broker || 'No informado',
+        currency: asset.currency,
+        balance: asset.balance,
+        targetPct: asset.targetPct || 0,
+        currentPct: totalARS() > 0 ? Number(((toARSval(asset) / totalARS()) * 100).toFixed(1)) : 0,
+      })),
+      totalUSD: Number(totalUSD().toFixed(2)),
+      exchangeRateARSperUSD: usdRate,
+      budgetCurrency,
+    });
+    const response = await fetch('/api/advisor', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `******
+      },
+      body: JSON.stringify({ type: 'follow-up', questionId: question.id, context }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Error al consultar el advisor.');
+    if (typeof result.answer !== 'string' || !result.answer.trim()) {
+      throw new Error('El advisor devolvió una respuesta vacía. Intentá de nuevo.');
+    }
+
+    removeLoadingMsg();
+    showAdvisorAnswer(result.answer, result.sources);
+  } catch (error) {
+    removeLoadingMsg();
+    console.error('Advisor follow-up failed.', error);
+    showAiMsg(error.message || 'No se pudo completar el análisis. Intentá de nuevo.', false);
+  }
+
+  showAdvisorFollowUps();
+}
+
+function showAdvisorAnswer(answer, sources) {
+  const message = showAiMsg('', false);
+  const text = message.querySelector('.ai-msg-text');
+  const citations = Array.isArray(sources)
+    ? sources.filter(source =>
+      source &&
+      typeof source.url === 'string' &&
+      /^https?:\/\//i.test(source.url) &&
+      Number.isInteger(source.startIndex) &&
+      Number.isInteger(source.endIndex) &&
+      source.startIndex >= 0 &&
+      source.endIndex > source.startIndex &&
+      source.endIndex <= answer.length
+    ).sort((a, b) => a.startIndex - b.startIndex)
+    : [];
+  const linkedSources = new Set();
+
+  let cursor = 0;
+  citations.forEach(source => {
+    if (source.startIndex < cursor) return;
+    text.appendChild(document.createTextNode(answer.slice(cursor, source.startIndex)));
+    const link = document.createElement('a');
+    link.href = source.url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.className = 'advisor-citation';
+    link.textContent = answer.slice(source.startIndex, source.endIndex) || source.title || 'Fuente';
+    text.appendChild(link);
+    linkedSources.add(source);
+    cursor = source.endIndex;
+  });
+  text.appendChild(document.createTextNode(answer.slice(cursor)));
+
+  const unlinkedSources = Array.isArray(sources)
+    ? sources.filter(source => source && typeof source.url === 'string' && !linkedSources.has(source))
+    : [];
+  if (unlinkedSources.length) {
+    const sourceList = document.createElement('div');
+    sourceList.className = 'advisor-sources';
+    const heading = document.createElement('strong');
+    heading.textContent = 'Fuentes consultadas';
+    sourceList.appendChild(heading);
+    unlinkedSources.forEach(source => {
+      if (!/^https?:\/\//i.test(source.url)) return;
+      const link = document.createElement('a');
+      link.href = source.url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = source.title || source.url;
+      sourceList.appendChild(link);
+    });
+    message.appendChild(sourceList);
+  }
 }
 
 function showAiMsg(text, isUser, isLoading) {
-  const wrap = document.getElementById('ai-messages');
+  const wrap = document.getElementById('ai-report');
   const div  = document.createElement('div');
   div.className = 'ai-msg' + (isUser ? ' ai-user' : '');
   if (isLoading) div.dataset.loading = '1';
@@ -1300,11 +1400,95 @@ function showAiMsg(text, isUser, isLoading) {
   div.appendChild(txt);
   wrap.appendChild(div);
   div.scrollIntoView({ behavior:'smooth', block:'end' });
+  return div;
 }
 
 function removeLoadingMsg() {
   const el = document.querySelector('[data-loading="1"]');
   if (el) el.remove();
+}
+
+function renderAdvisorReport(report) {
+  const wrap = document.getElementById('ai-report');
+  wrap.innerHTML = '';
+
+  const profileCard = document.createElement('section');
+  profileCard.className = 'advisor-report-card';
+  appendReportHeading(profileCard, 'Ficha del inversor');
+  const details = document.createElement('dl');
+  details.className = 'advisor-profile-grid';
+  [
+    ['Perfil de riesgo', report.investorProfile.riskProfile],
+    ['Horizonte', report.investorProfile.horizon],
+    ['Moneda de referencia', report.investorProfile.referenceCurrency],
+    ['Objetivo', report.investorProfile.objective],
+    ['Caída temporal tolerada', report.investorProfile.toleratedDrawdown],
+    ['Estilo', report.investorProfile.style],
+    ['Ahorro mensual aproximado', report.investorProfile.monthlySavings],
+  ].forEach(([label, value]) => {
+    const row = document.createElement('div');
+    const term = document.createElement('dt');
+    term.textContent = label;
+    const description = document.createElement('dd');
+    description.textContent = value;
+    row.append(term, description);
+    details.appendChild(row);
+  });
+  profileCard.appendChild(details);
+  appendReportList(profileCard, 'Activos observados en la cartera', report.investorProfile.observedAssets);
+  appendReportList(profileCard, 'Preferencias de activos confirmadas', report.investorProfile.preferredAssets);
+  appendReportList(profileCard, 'Restricciones', report.investorProfile.restrictions);
+  appendReportScore(profileCard, 'Puntaje de riesgo', report.investorProfile.riskScore, report.investorProfile.riskScoreNote);
+
+  const summaryCard = document.createElement('section');
+  summaryCard.className = 'advisor-report-card';
+  appendReportHeading(summaryCard, 'Resumen ejecutivo de la cartera');
+  appendReportList(summaryCard, 'Fortalezas', report.portfolioSummary.strengths);
+  appendReportList(summaryCard, 'Riesgos principales', report.portfolioSummary.mainRisks);
+  appendReportText(summaryCard, 'Prioridad', report.portfolioSummary.priority);
+  appendReportScore(summaryCard, 'Puntaje provisional de la cartera', report.portfolioSummary.portfolioScore, report.portfolioSummary.portfolioScoreNote);
+  const date = document.createElement('p');
+  date.className = 'advisor-report-date';
+  date.textContent = `Actualizado: ${new Date(report.generatedAt).toLocaleString('es-AR')}`;
+  summaryCard.appendChild(date);
+  wrap.append(profileCard, summaryCard);
+}
+
+function appendReportHeading(parent, text) {
+  const heading = document.createElement('h3');
+  heading.className = 'advisor-report-heading';
+  heading.textContent = text;
+  parent.appendChild(heading);
+}
+
+function appendReportText(parent, label, value) {
+  const section = document.createElement('div');
+  section.className = 'advisor-report-item';
+  const heading = document.createElement('strong');
+  heading.textContent = label;
+  const text = document.createElement('p');
+  text.textContent = value;
+  section.append(heading, text);
+  parent.appendChild(section);
+}
+
+function appendReportList(parent, label, values) {
+  const section = document.createElement('div');
+  section.className = 'advisor-report-item';
+  const heading = document.createElement('strong');
+  heading.textContent = label;
+  const list = document.createElement('ul');
+  (Array.isArray(values) && values.length ? values : ['No informado']).forEach(value => {
+    const item = document.createElement('li');
+    item.textContent = value;
+    list.appendChild(item);
+  });
+  section.append(heading, list);
+  parent.appendChild(section);
+}
+
+function appendReportScore(parent, label, value, note) {
+  appendReportText(parent, label, `${value === null ? 'No disponible' : `${value}/10`}. ${note}`);
 }
 
 function showOptions(opts, cb) {
@@ -1324,62 +1508,13 @@ function showOptions(opts, cb) {
   wrap.scrollIntoView({ behavior:'smooth', block:'end' });
 }
 
-function showMultiSelect(opts, cb) {
-  const wrap = document.getElementById('ai-options');
-  wrap.innerHTML = '';
-  const chosen = [];
-  const div = document.createElement('div');
-  div.className = 'ai-options-wrap';
-  opts.forEach(opt => {
-    const btn = document.createElement('button');
-    btn.className = 'ai-opt-btn';
-    btn.textContent = opt;
-    btn.onclick = () => {
-      const idx = chosen.indexOf(opt);
-      if (idx >= 0) {
-        chosen.splice(idx, 1);
-        btn.style.borderColor = '';
-        btn.style.color = '';
-      } else {
-        chosen.push(opt);
-        btn.style.borderColor = 'var(--purple)';
-        btn.style.color = 'var(--purple)';
-      }
-    };
-    div.appendChild(btn);
-  });
-  const confirm = document.createElement('button');
-  confirm.className = 'ai-opt-btn';
-  confirm.textContent = 'Confirmar →';
-  confirm.style.borderColor = 'var(--green)';
-  confirm.style.color = 'var(--green)';
-  confirm.style.marginTop = '4px';
-  confirm.onclick = () => {
-    if (!chosen.length) chosen.push('Ninguna todavía');
-    wrap.innerHTML = '';
-    cb(chosen);
-  };
-  div.appendChild(confirm);
-  wrap.appendChild(div);
-  wrap.scrollIntoView({ behavior:'smooth', block:'end' });
-}
-
-function resetAdvisor() {
-  aiProfile = {}; aiHistory = []; aiPhase = 'idle';
-  aiEmptyPortfolio = false;
-  document.getElementById('ai-idle').style.display    = 'block';
-  document.getElementById('ai-session').style.display = 'none';
-  document.getElementById('ai-messages').innerHTML    = '';
-  document.getElementById('ai-options').innerHTML     = '';
-  document.getElementById('ai-restart').style.display = 'none';
-}
-
 // ── BOOT ──────────────────────────────────────────────────────
 window.habitoStartDashboard = async user => {
   currentUserId = user.id;
   setUserStorageScope(user.id);
   const saved = await window.HabitoData.load(user.id);
   if (saved) {
+    advisorReport = saved.advisorReport || null;
     Object.entries(saved).forEach(([key, value]) => {
       if (Object.hasOwn(SK, key) && value !== null && value !== undefined) {
         localStorage.setItem(SK[key], typeof value === 'string' ? value : JSON.stringify(value));
@@ -1388,6 +1523,13 @@ window.habitoStartDashboard = async user => {
   }
   loadGoals();
   init();
+  if (advisorReport) {
+    document.getElementById('ai-idle').style.display = 'none';
+    document.getElementById('ai-session').style.display = 'block';
+    renderAdvisorReport(advisorReport);
+    showAdvisorFollowUps();
+    document.getElementById('ai-restart').style.display = 'block';
+  }
   if (!saved) syncUserData();
   window.HabitoMacro.load().then(data => { window.habitoMacroData = data; }).catch(error => {
     console.error('Unable to load shared macro data.', error);
