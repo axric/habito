@@ -1141,8 +1141,17 @@ const QUESTIONS = [
   { id:'horizon', text:'¿Cuál es tu horizonte de inversión?', options:['1 año','3 años','5 años','10 años'] },
   { id:'risk',    text:'¿Cómo definirías tu tolerancia al riesgo?', options:['🛡️ Conservador — prefiero no perder','⚖️ Moderado — acepto algo de riesgo','🚀 Agresivo — busco máximo rendimiento'] },
   { id:'residency', text:'Por las monedas de tus activos, estos podrían ser tus mercados. ¿Cuál corresponde a tu residencia fiscal?', dynamicOptions:'residency' },
-  { id:'objective', text:'¿Cuál es tu objetivo principal de inversión?', input:true },
-  { id:'secondaryObjectives', text:'¿Tenés objetivos secundarios?', input:true },
+  {
+    id:'objective',
+    text:'¿Cuál es tu objetivo principal de inversión?',
+    options:['Crecimiento patrimonial','Preservación del capital','Generar ingresos periódicos','Ahorrar para una meta concreta','Jubilación','Otro / No informado'],
+  },
+  {
+    id:'secondaryObjectives',
+    text:'¿Qué objetivos secundarios tenés? Podés elegir varios.',
+    multiple:true,
+    options:['Preservación del capital','Diversificación','Generar ingresos periódicos','Mantener liquidez','Ahorrar para una meta concreta','Jubilación','Ninguno'],
+  },
   { id:'toleratedDrawdown', text:'¿Qué caída porcentual de tu cartera tolerarías?', options:['10%','25%','50%','No informado'] },
   {
     id:'restrictions',
@@ -1332,7 +1341,24 @@ ${JSON.stringify(assets.map(asset => ({ name: asset.name, type: asset.type, curr
       ...report,
       generatedAt: new Date().toISOString(),
       strategyConfirmed: false,
-      investorProfile: { ...report.investorProfile, selectedContributionStrategy: '' },
+      investorProfile: {
+        ...report.investorProfile,
+        riskProfile: aiProfile.risk,
+        horizon: aiProfile.horizon,
+        referenceCurrency: aiProfile.referenceCurrency,
+        residency: aiProfile.residency,
+        objective: aiProfile.objective,
+        secondaryObjectives: Array.isArray(aiProfile.secondaryObjectives)
+          ? aiProfile.secondaryObjectives.filter(value => value !== 'Ninguno').join(' y ') || 'Ninguno'
+          : aiProfile.secondaryObjectives,
+        toleratedDrawdown: aiProfile.toleratedDrawdown,
+        restrictions: Array.isArray(aiProfile.restrictions)
+          ? aiProfile.restrictions.join(', ')
+          : aiProfile.restrictions,
+        preferredAssets: summarizeAssetClasses(),
+        monthlySavings: aiProfile.monthlySavings,
+        selectedContributionStrategy: '',
+      },
     };
     await syncUserData();
     renderAdvisorReport(advisorReport);
@@ -1416,6 +1442,11 @@ function inferReferenceCurrency() {
   if (ranked[0][1] <= 0) return 'No informada';
   if (ranked[1] && ranked[0][1] === ranked[1][1]) return 'Mixta / No informada';
   return `${ranked[0][0]} (inferida por mayoría del valor de cartera)`;
+}
+
+function summarizeAssetClasses() {
+  const classes = [...new Set(assets.map(asset => TYPE_LABEL_MAP[asset.type] || 'Otro'))];
+  return classes.length ? classes.join(', ') : 'No informado';
 }
 
 function askContributionStrategy() {
@@ -1643,6 +1674,8 @@ function formatProfileValue(value) {
   return value
     .replace(/\s*\(inferida(?:\s+[^)]*)?\)/gi, '')
     .replace(/\s*[—-]?\s*inferid[oa]s? de las tenencias(?:;[^.]*)?\.?/gi, '')
+    .replace(/^no informado explícitamente;\s*inferencia por tenencias:\s*/i, '')
+    .replace(/^inferid[oa]s? de las tenencias:\s*/i, '')
     .replace(/^sugerencia pendiente de confirmación:\s*/i, '')
     .replace(/^estrategia sugerida(?: según tu cartera)?:\s*/i, '')
     .trim() || 'No informado';
