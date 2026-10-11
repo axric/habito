@@ -97,7 +97,7 @@ module.exports = async function handler(request, response) {
     const userResponse = await fetch(`${supabaseUrl.replace(/\/$/, '')}/auth/v1/user`, {
       headers: {
         apikey: supabaseAnonKey,
-        Authorization: `Bearer ${tokenMatch[1]}`,
+        Authorization: 'Bearer ' + tokenMatch[1],
       },
     });
 
@@ -133,7 +133,7 @@ module.exports = async function handler(request, response) {
         const researchResponse = await fetch('https://api.openai.com/v1/responses', {
           method: 'POST',
           headers: {
-            Authorization: `******
+            Authorization: 'Bearer ' + openAiKey,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -166,7 +166,7 @@ module.exports = async function handler(request, response) {
       const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
-          Authorization: `******
+          Authorization: 'Bearer ' + openAiKey,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -223,7 +223,7 @@ module.exports = async function handler(request, response) {
     const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${openAiKey}`,
+        Authorization: 'Bearer ' + openAiKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({

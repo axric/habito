@@ -1237,21 +1237,39 @@ async function callAI(system, userMsg) {
       method:'POST',
       headers:{
         'Content-Type':'application/json',
-        Authorization:`Bearer ${data.session.access_token}`,
+        Authorization: 'Bearer ' + data.session.access_token,
       },
       body: JSON.stringify({ system, messages:[{ role:'user', content:userMsg }] }),
     });
-    const result = await res.json();
-    if (!res.ok) throw new Error(result.error || 'Error al conectar con el advisor.');
+    const result = await parseAdvisorResponse(res, 'No se pudo generar el análisis. Intentá de nuevo en unos minutos.');
     if (!result.report) throw new Error('El advisor devolvió un informe incompleto. Intentá actualizar el análisis.');
     removeLoadingMsg();
     return result.report;
   } catch(e) {
     removeLoadingMsg();
     console.error('Advisor request failed.', e);
-    document.getElementById('ai-report').textContent = e.message || 'Error al conectar con el advisor. Intentá de nuevo.';
+    document.getElementById('ai-report').textContent = e.message === 'Tu sesión expiró. Iniciá sesión nuevamente.'
+      ? e.message
+      : 'No se pudo generar el análisis. Intentá de nuevo en unos minutos.';
     return null;
   }
+}
+
+async function parseAdvisorResponse(response, fallbackMessage) {
+  let result;
+  try {
+    result = await response.json();
+  } catch (error) {
+    console.error('Advisor endpoint returned a non-JSON response.', response.status);
+    throw new Error(fallbackMessage);
+  }
+
+  if (!response.ok) {
+    console.error('Advisor endpoint returned an error status.', response.status);
+    throw new Error(response.status === 401 ? 'Tu sesión expiró. Iniciá sesión nuevamente.' : fallbackMessage);
+  }
+
+  return result;
 }
 
 function buildPortfolioContext() {
@@ -1306,8 +1324,7 @@ async function askAdvisorFollowUp(question) {
       },
       body: JSON.stringify({ type: 'follow-up', questionId: question.id, context }),
     });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || 'Error al consultar el advisor.');
+    const result = await parseAdvisorResponse(response, 'No se pudo completar la consulta. Intentá de nuevo en unos minutos.');
     if (typeof result.answer !== 'string' || !result.answer.trim()) {
       throw new Error('El advisor devolvió una respuesta vacía. Intentá de nuevo.');
     }
@@ -1317,7 +1334,9 @@ async function askAdvisorFollowUp(question) {
   } catch (error) {
     removeLoadingMsg();
     console.error('Advisor follow-up failed.', error);
-    showAiMsg(error.message || 'No se pudo completar el análisis. Intentá de nuevo.', false);
+    showAiMsg(error.message === 'Tu sesión expiró. Iniciá sesión nuevamente.'
+      ? error.message
+      : 'No se pudo completar la consulta. Intentá de nuevo en unos minutos.', false);
   }
 
   showAdvisorFollowUps();
