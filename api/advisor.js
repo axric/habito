@@ -71,7 +71,8 @@ module.exports = async function handler(request, response) {
       },
       body: JSON.stringify({
         model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-        max_completion_tokens: 600,
+        reasoning_effort: 'minimal',
+        max_completion_tokens: 1200,
         messages: [
           { role: 'system', content: body.system },
           ...body.messages,
@@ -86,10 +87,32 @@ module.exports = async function handler(request, response) {
       return;
     }
 
-    const content = result.choices?.[0]?.message?.content;
+    const choice = result.choices?.[0];
+    const message = choice?.message;
+    const content = typeof message?.content === 'string'
+      ? message.content
+      : Array.isArray(message?.content)
+        ? message.content
+          .filter(part => part.type === 'text' && typeof part.text === 'string')
+          .map(part => part.text)
+          .join('')
+        : '';
     if (typeof content !== 'string' || !content.trim()) {
-      console.error('OpenAI advisor returned no message content.');
-      response.status(502).json({ error: 'The advisor returned an empty response. Please try again.' });
+      console.error(
+        'OpenAI advisor returned no message content.',
+        JSON.stringify({
+          finishReason: choice?.finish_reason,
+          completionTokens: result.usage?.completion_tokens,
+          refusal: Boolean(message?.refusal),
+        })
+      );
+      response.status(502).json({
+        error: message?.refusal
+          ? 'The advisor could not answer that request. Please try a different question.'
+          : choice?.finish_reason === 'length'
+            ? 'The advisor response exceeded its token limit. Please try again.'
+            : 'The advisor returned an empty response. Please try again.',
+      });
       return;
     }
 
