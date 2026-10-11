@@ -1302,7 +1302,7 @@ async function askAdvisorFollowUp(question) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `******
+        Authorization: 'Bearer ' + data.session.access_token,
       },
       body: JSON.stringify({ type: 'follow-up', questionId: question.id, context }),
     });
