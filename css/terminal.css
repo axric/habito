@@ -124,6 +124,8 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
 .advisor-sources{display:flex;flex-direction:column;gap:4px;margin-top:10px;font-size:9px;}
 .advisor-sources strong{color:var(--muted);font-weight:500;}
 .ai-options-wrap{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
+.ai-text-input{width:100%;min-width:0;background:var(--bg-dark);border:1px solid var(--selection);border-radius:var(--r-md);color:var(--fg);font:11px 'Poppins',sans-serif;padding:10px 12px;outline:none;}
+.ai-text-input:focus{border-color:var(--purple);}
 .ai-opt-btn{background:var(--bg-dark);border:1px solid var(--selection);border-radius:var(--r-md);color:var(--fg);font-family:'Poppins',sans-serif;font-size:11px;font-weight:500;padding:10px 14px;cursor:pointer;text-align:left;transition:all .15s;}
 .ai-opt-btn:hover{border-color:var(--purple);color:var(--purple);}
 .ai-dots::after{content:'...';animation:dots 1.2s step-end infinite;}

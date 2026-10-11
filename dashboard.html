@@ -1138,9 +1138,17 @@ function showToast(msg) {
 
 // ── ADVISOR IA ────────────────────────────────────────────────
 const QUESTIONS = [
-  { id:'horizon', text:'¿A qué plazo querés invertir tus ahorros?', options:['1 año','3 años','5 años','10+ años'] },
+  { id:'horizon', text:'¿Cuál es tu horizonte de planificación?', input:true },
   { id:'risk',    text:'¿Cómo definirías tu tolerancia al riesgo?', options:['🛡️ Conservador — prefiero no perder','⚖️ Moderado — acepto algo de riesgo','🚀 Agresivo — busco máximo rendimiento'] },
-  { id:'monthly', text:'¿Cuánto podés ahorrar por mes aproximadamente?', options:['Menos de u$s 500','u$s 500 – 2.000','u$s 2.000 – 5.000','Más de u$s 5.000'] },
+  { id:'referenceCurrency', text:'¿Cuál es tu moneda de referencia?', input:true },
+  { id:'residency', text:'¿Cuál es tu residencia fiscal o mercado principal?', input:true },
+  { id:'objective', text:'¿Cuál es tu objetivo principal de inversión?', input:true },
+  { id:'secondaryObjectives', text:'¿Tenés objetivos secundarios?', input:true },
+  { id:'toleratedDrawdown', text:'¿Qué caída temporal de tu cartera tolerarías?', input:true },
+  { id:'style', text:'¿Cómo describirías tu estilo de inversión?', input:true },
+  { id:'contributionStrategy', text:'¿Qué estrategia usás para tus aportes y rebalanceos?', input:true },
+  { id:'preferredAssets', text:'¿Qué tipos de activos preferís?', input:true },
+  { id:'restrictions', text:'¿Qué restricciones o límites querés respetar?', input:true },
 ];
 
 const ADVISOR_FOLLOW_UPS = [
@@ -1164,23 +1172,55 @@ function startAdvisor() {
 function askQuestion(idx) {
   const q = QUESTIONS[idx];
   showAiMsg(q.text, false);
-  showOptions(q.options, chosen => {
-    aiProfile[q.id] = chosen;
-    showAiMsg(chosen, true);
+  const onAnswer = answer => {
+    aiProfile[q.id] = answer;
+    showAiMsg(answer, true);
     const next = idx + 1;
-    if (next < QUESTIONS.length) {
-      setTimeout(() => askQuestion(next), 400);
-    } else {
-      setTimeout(() => runAnalysis(), 400);
-    }
+    if (next < QUESTIONS.length) setTimeout(() => askQuestion(next), 400);
+    else setTimeout(() => runAnalysis(), 400);
+  };
+  if (q.input) showTextQuestion(onAnswer);
+  else showOptions(q.options, onAnswer);
+}
+
+function showTextQuestion(onAnswer) {
+  const wrap = document.getElementById('ai-options');
+  wrap.innerHTML = '';
+  const row = document.createElement('div');
+  row.className = 'ai-options-wrap';
+  const input = document.createElement('input');
+  input.className = 'ai-text-input';
+  input.type = 'text';
+  input.maxLength = 160;
+  input.placeholder = 'Escribí tu respuesta o “No informado”';
+  input.setAttribute('aria-label', 'Respuesta del perfil inversor');
+  const button = document.createElement('button');
+  button.className = 'ai-opt-btn';
+  button.textContent = 'Continuar';
+  const submit = () => {
+    if (button.disabled) return;
+    const answer = input.value.trim() || 'No informado';
+    button.disabled = true;
+    input.disabled = true;
+    onAnswer(answer);
+  };
+  button.addEventListener('click', submit);
+  input.addEventListener('keydown', event => {
+    if (event.key === 'Enter') submit();
   });
+  row.append(input, button);
+  wrap.appendChild(row);
+  input.focus();
 }
 
 async function runAnalysis() {
   showOptions([], null);
   showAiMsg('Analizando tu portafolio', false, true);
+  aiProfile.monthlySavings = budget > 0
+    ? (budgetCurrency === 'USD' ? fmtUSD(budget) : fmtARS(budget))
+    : 'No informado';
   const ctx = buildPortfolioContext();
-  const system = `Sos un analista de carteras para inversores latinoamericanos. Analizás solamente el perfil y los activos provistos; no sugieras activos nuevos, operaciones, compras, ventas ni pasos de seguimiento. Respondé en español como JSON válido, sin Markdown ni texto fuera del JSON. No inventes datos personales: si el usuario no informó un dato, indicá "No informado". La moneda de referencia debe describirse como USD equivalente para comparar la cartera, no como preferencia del usuario. Distingue activos observados de preferencias confirmadas.
+  const system = `Sos un analista de carteras para inversores latinoamericanos. Analizás solamente el perfil y los activos provistos; no sugieras activos nuevos, operaciones, compras, ventas ni pasos de seguimiento. Respondé en español como JSON válido, sin Markdown ni texto fuera del JSON. No inventes datos personales; los datos confirmados del inversor se indican explícitamente más abajo.
 
 Devolvé exactamente este objeto:
 {
@@ -1188,13 +1228,15 @@ Devolvé exactamente este objeto:
     "riskProfile": "string",
     "horizon": "string",
     "referenceCurrency": "string",
+    "residency": "string",
     "objective": "string",
+    "secondaryObjectives": "string",
     "toleratedDrawdown": "string",
     "style": "string",
+    "contributionStrategy": "string",
+    "preferredAssets": "string",
+    "restrictions": "string",
     "monthlySavings": "string",
-    "observedAssets": ["string"],
-    "preferredAssets": ["string"],
-    "restrictions": ["string"],
     "riskScore": 1,
     "riskScoreNote": "string"
   },
@@ -1208,9 +1250,9 @@ Devolvé exactamente este objeto:
 }
 
 Puntajes entre 1 y 10. Ambos son provisionales, cualitativos y no estandarizados; explicalo. Si no hay activos, decí que todavía no es posible puntuar la cartera ni identificar fortalezas/riesgos de posiciones, y no recomiendes productos.
-En "observedAssets" enumera los activos que aparecen en la cartera sin presentarlos como preferencias. Completa "preferredAssets" y "restrictions" solo con datos confirmados; si no se informaron, usa ["No informado"]. En "priority" resume el principal hallazgo de la composición actual, sin dar instrucciones de operación.
+En la Ficha del inversor, usa únicamente las respuestas provistas para describir los datos personales. No infieras residencia, moneda de referencia, objetivos, estilo, estrategia, preferencias ni restricciones desde las tenencias. Para cualquier respuesta igual a "No informado", conserva ese valor.
 
-Respuestas del cuestionario: horizonte ${aiProfile.horizon}; tolerancia al riesgo ${aiProfile.risk}; ahorro mensual aproximado ${aiProfile.monthly}. Moneda del presupuesto mensual: ${budgetCurrency}.
+Respuestas del cuestionario del usuario: ${JSON.stringify(aiProfile)}. El campo monthlySavings ya refleja el monto mensual cargado en Aporte mensual; no lo reemplaces ni lo estimes.
 Cartera actual en USD equivalente:
 ${ctx || 'Sin activos registrados.'}
 Tipo de cambio usado: ${fmtNum(usdRate,0)} ARS/USD.
@@ -1437,13 +1479,18 @@ function renderAdvisorReport(report) {
   const details = document.createElement('dl');
   details.className = 'advisor-profile-grid';
   [
-    ['Perfil de riesgo', report.investorProfile.riskProfile],
-    ['Horizonte', report.investorProfile.horizon],
-    ['Moneda de referencia', report.investorProfile.referenceCurrency],
-    ['Objetivo', report.investorProfile.objective],
-    ['Caída temporal tolerada', report.investorProfile.toleratedDrawdown],
-    ['Estilo', report.investorProfile.style],
-    ['Ahorro mensual aproximado', report.investorProfile.monthlySavings],
+    ['Perfil de riesgo', formatProfileValue(report.investorProfile.riskProfile)],
+    ['Horizonte de planificación', formatProfileValue(report.investorProfile.horizon)],
+    ['Moneda de referencia', formatProfileValue(report.investorProfile.referenceCurrency)],
+    ['Residencia fiscal / mercado', formatProfileValue(report.investorProfile.residency)],
+    ['Objetivo principal', formatProfileValue(report.investorProfile.objective)],
+    ['Objetivos secundarios', formatProfileValue(report.investorProfile.secondaryObjectives)],
+    ['Caída temporal tolerada', formatProfileValue(report.investorProfile.toleratedDrawdown)],
+    ['Estilo', formatProfileValue(report.investorProfile.style)],
+    ['Estrategia de aportes', formatProfileValue(report.investorProfile.contributionStrategy)],
+    ['Activos preferidos', formatProfileValue(report.investorProfile.preferredAssets)],
+    ['Restricciones', formatProfileValue(report.investorProfile.restrictions)],
+    ['Ahorro mensual aproximado', formatProfileValue(report.investorProfile.monthlySavings)],
   ].forEach(([label, value]) => {
     const row = document.createElement('div');
     const term = document.createElement('dt');
@@ -1454,9 +1501,6 @@ function renderAdvisorReport(report) {
     details.appendChild(row);
   });
   profileCard.appendChild(details);
-  appendReportList(profileCard, 'Activos observados en la cartera', report.investorProfile.observedAssets);
-  appendReportList(profileCard, 'Preferencias de activos confirmadas', report.investorProfile.preferredAssets);
-  appendReportList(profileCard, 'Restricciones', report.investorProfile.restrictions);
   appendReportScore(profileCard, 'Puntaje de riesgo', report.investorProfile.riskScore, report.investorProfile.riskScoreNote);
 
   const summaryCard = document.createElement('section');
@@ -1471,6 +1515,11 @@ function renderAdvisorReport(report) {
   date.textContent = `Actualizado: ${new Date(report.generatedAt).toLocaleString('es-AR')}`;
   summaryCard.appendChild(date);
   wrap.append(profileCard, summaryCard);
+}
+
+function formatProfileValue(value) {
+  if (Array.isArray(value)) return value.length ? value.join(', ') : 'No informado';
+  return typeof value === 'string' && value.trim() ? value : 'No informado';
 }
 
 function appendReportHeading(parent, text) {
