@@ -1,0 +1,2 @@
+window.HABITO_SUPABASE_URL = '';
+window.HABITO_SUPABASE_ANON_KEY = '';
