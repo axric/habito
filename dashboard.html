@@ -1379,10 +1379,39 @@ window.habitoStartDashboard = async user => {
   });
 };
 </script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="/js/data.js"></script>
-<script src="/js/macro.js"></script>
-<script src="/js/config.js"></script>
-<script src="/js/auth.js"></script>
+<script type="module">
+  const error = document.getElementById('auth-error');
+
+  try {
+    const [{ onAuthChange, requireAuth, signOut }] = await Promise.all([
+      import('/js/auth.js'),
+      import('/js/data.js'),
+      import('/js/macro.js'),
+    ]);
+
+    const user = await requireAuth();
+    if (user) {
+      document.getElementById('logout-button').addEventListener('click', async () => {
+        try {
+          await signOut();
+        } catch (cause) {
+          console.error('Logout failed.', cause);
+          error.textContent = 'No se pudo cerrar la sesión. Intentá de nuevo.';
+          error.hidden = false;
+        }
+      });
+
+      await window.habitoStartDashboard(user);
+      onAuthChange(nextUser => {
+        if (!nextUser) window.location.replace('/');
+      });
+      document.body.classList.add('ready');
+    }
+  } catch (cause) {
+    console.error('Unable to initialize dashboard.', cause);
+    error.textContent = cause.message || 'No se pudieron cargar tus datos. Recargá la página.';
+    error.hidden = false;
+  }
+</script>
 </body>
 </html>

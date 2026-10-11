@@ -107,6 +107,14 @@ export async function getLastUpdated() {
   return { timestamp: data.updated_at, error: null };
 }
 
+async function loadMacroData() {
+  const { data, error } = await getMacroData();
+  if (error) throw new Error(error);
+  return data;
+}
+
+window.HabitoMacro = { load: loadMacroData };
+
 
 // ------------------------------------------------------------
 // formatMacroForDashboard(macroMap)

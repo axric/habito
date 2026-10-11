@@ -166,6 +166,34 @@ export async function deleteObjective(id) {
   return { error: error?.message ?? null };
 }
 
+export async function load(userId) {
+  const { data, error } = await supabase
+    .from('user_data')
+    .select('data')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data?.data ?? null;
+}
+
+let pendingSave = Promise.resolve();
+
+export function save(userId, state) {
+  const snapshot = JSON.parse(JSON.stringify(state));
+  const nextSave = pendingSave.catch(() => {}).then(async () => {
+    const { error } = await supabase
+      .from('user_data')
+      .upsert({ user_id: userId, data: snapshot }, { onConflict: 'user_id' });
+    if (error) throw error;
+  });
+
+  pendingSave = nextSave;
+  return nextSave;
+}
+
+window.HabitoData = { load, save };
+
 
 // ------------------------------------------------------------
 // HELPERS

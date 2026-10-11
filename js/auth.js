@@ -5,14 +5,27 @@
 
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-// ------------------------------------------------------------
-// Init — replace with your Supabase project values
-// These are safe to expose in the frontend (anon key only)
-// ------------------------------------------------------------
-const SUPABASE_URL  = '__SUPABASE_URL__';
-const SUPABASE_ANON = '__SUPABASE_ANON_KEY__';
+const configResponse = await fetch('/api/config', { cache: 'no-store' });
+if (!configResponse.ok) {
+  throw new Error(`No se pudo cargar la configuración de Supabase (HTTP ${configResponse.status}).`);
+}
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
+const config = await configResponse.json();
+if (!config.supabaseUrl || !config.supabaseAnonKey) {
+  throw new Error('Falta la URL o la clave pública de Supabase en la configuración de Vercel.');
+}
+
+let supabaseUrl;
+try {
+  supabaseUrl = new URL(config.supabaseUrl);
+} catch {
+  throw new Error('La URL de Supabase configurada en Vercel no es válida.');
+}
+if (supabaseUrl.protocol !== 'https:' && supabaseUrl.protocol !== 'http:') {
+  throw new Error('La URL de Supabase debe comenzar con https://.');
+}
+
+export const supabase = createClient(supabaseUrl.toString().replace(/\/$/, ''), config.supabaseAnonKey);
 
 
 // ------------------------------------------------------------
@@ -31,8 +44,9 @@ export async function signIn(email, password) {
 // Clears session and redirects to login
 // ------------------------------------------------------------
 export async function signOut() {
-  await supabase.auth.signOut();
-  window.location.href = '/index.html';
+  const { error } = await supabase.auth.signOut();
+  if (error) throw error;
+  window.location.href = '/';
 }
 
 
@@ -41,7 +55,8 @@ export async function signOut() {
 // Returns current session or null
 // ------------------------------------------------------------
 export async function getSession() {
-  const { data } = await supabase.auth.getSession();
+  const { data, error } = await supabase.auth.getSession();
+  if (error) throw error;
   return data.session ?? null;
 }
 
@@ -54,7 +69,7 @@ export async function getSession() {
 export async function requireAuth() {
   const session = await getSession();
   if (!session) {
-    window.location.href = '/index.html';
+    window.location.replace('/');
     return null;
   }
   return session.user;
@@ -67,7 +82,7 @@ export async function requireAuth() {
 // Usage: onAuthChange((user) => { ... })
 // ------------------------------------------------------------
 export function onAuthChange(callback) {
-  supabase.auth.onAuthStateChange((_event, session) => {
+  return supabase.auth.onAuthStateChange((_event, session) => {
     callback(session?.user ?? null);
   });
 }

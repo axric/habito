@@ -219,7 +219,7 @@
 
       <div class="error-box" id="error-box"></div>
 
-      <button class="btn-login" id="btn-login" type="submit">
+      <button class="btn-login" id="btn-login" type="submit" disabled>
         <span class="btn-text">▸ &nbsp;iniciar sesión</span>
         <span class="spinner">↻</span>
       </button>
@@ -235,42 +235,49 @@
 </div>
 
 <script type="module">
-  import { signIn, getSession } from './js/auth.js';
+  const btn = document.getElementById('btn-login');
+  const errorBox = document.getElementById('error-box');
+  let signIn;
 
-  // Redirect if already logged in
-  (async () => {
-    const session = await getSession();
-    if (session) window.location.href = '/dashboard.html';
-  })();
+  window.handleLogin = async function(event) {
+    event.preventDefault();
+    if (!signIn) return;
 
-  window.handleLogin = async function(e) {
-    e.preventDefault();
-    const email    = document.getElementById('email').value.trim();
+    const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
-    const btn      = document.getElementById('btn-login');
-    const errorBox = document.getElementById('error-box');
-
-    // Reset error
     errorBox.textContent = '';
     errorBox.classList.remove('visible');
-
-    // Loading state
     btn.classList.add('loading');
     btn.disabled = true;
 
-    const { user, error } = await signIn(email, password);
-
-    if (error) {
-      errorBox.textContent = '▸ ' + error;
+    try {
+      const result = await signIn(email, password);
+      if (result.error) throw new Error(result.error);
+      if (!result.user) throw new Error('No se pudo iniciar sesión.');
+      window.location.assign('/dashboard');
+    } catch (error) {
+      console.error('Login failed.', error);
+      errorBox.textContent = '▸ ' + (error.message || 'No se pudo iniciar sesión.');
       errorBox.classList.add('visible');
       btn.classList.remove('loading');
       btn.disabled = false;
-      return;
     }
-
-    // Success → dashboard
-    window.location.href = '/dashboard.html';
   };
+
+  try {
+    const auth = await import('/js/auth.js');
+    signIn = auth.signIn;
+    if (await auth.getSession()) {
+      window.location.replace('/dashboard');
+    } else {
+      btn.disabled = false;
+    }
+  } catch (error) {
+    console.error('Unable to initialize Supabase auth.', error);
+    errorBox.textContent = '▸ ' + (error.message || 'No se pudo iniciar el servicio de autenticación.');
+    errorBox.classList.add('visible');
+    btn.disabled = true;
+  }
 </script>
 
 </body>
