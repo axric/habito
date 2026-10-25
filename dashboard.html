@@ -19,7 +19,7 @@
     <div class="hero-card">
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
         <div class="hero-label" id="hero-label" style="margin-bottom:0;">TOTAL</div>
-        <button id="visibility-btn" onclick="toggleVisibility()" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:0;line-height:1;display:flex;align-items:center;opacity:0.7;" title="Mostrar/ocultar saldos">
+        <button id="visibility-btn" onclick="toggleVisibility()" aria-pressed="true" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:0;line-height:1;display:flex;align-items:center;opacity:0.7;" title="Mostrar/ocultar saldos">
           <svg id="visibility-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"></path>
             <circle cx="12" cy="12" r="3"></circle>
@@ -256,7 +256,7 @@ const TYPE_LABEL_MAP = { Crypto:'Crypto', Stock:'Acción', ETF:'ETF', FCI:'FCI',
 const SK = {
   assets: 'assets', rate: 'rate', budget: 'budget', budgetCurrency: 'budgetCurrency',
   rebalanceo: 'rebalanceo', streak: 'streak', goals: 'goals', aporteDay: 'aporteDay',
-  aporteState: 'aporteState',
+  aporteState: 'aporteState', balancesVisible: 'balancesVisible',
 };
 
 let currentUserId = null;
@@ -266,7 +266,7 @@ function setUserStorageScope(userId) {
 }
 
 function currentUserData() {
-  return { assets, rate: usdRate, budget, budgetCurrency, rebalanceo: showRebalanceo, aporteDay, aporteState, goals, streak: localStorage.getItem(SK.streak), advisorReport };
+  return { assets, rate: usdRate, budget, budgetCurrency, rebalanceo: showRebalanceo, aporteDay, aporteState, balancesVisible, goals, streak: localStorage.getItem(SK.streak), advisorReport };
 }
 
 function syncUserData() {
@@ -299,6 +299,9 @@ function loadStorage() {
     if (bc) { budgetCurrency = bc; applyBudgetCurrencyUI(); }
     const rb = localStorage.getItem(SK.rebalanceo);
     if (rb) { showRebalanceo = rb === 'true'; applyRebalanceoUI(); }
+    const visibility = localStorage.getItem(SK.balancesVisible);
+    if (visibility !== null) balancesVisible = visibility === 'true';
+    applyVisibilityUI();
     const ad = localStorage.getItem(SK.aporteDay);
     if (ad) {
       aporteDay = parseInt(ad, 10) || 1;
@@ -319,6 +322,7 @@ function persist() {
     localStorage.setItem(SK.rebalanceo, String(showRebalanceo));
     localStorage.setItem(SK.aporteDay, String(aporteDay));
     localStorage.setItem(SK.aporteState, JSON.stringify(aporteState));
+    localStorage.setItem(SK.balancesVisible, String(balancesVisible));
     syncUserData();
   } catch(e) { console.warn('Storage save error', e); }
 }
@@ -462,14 +466,20 @@ function totalUSD() { return totalARS() / safeRate(); }
 
 function toggleVisibility() {
   balancesVisible = !balancesVisible;
+  applyVisibilityUI();
+  persist();
+  renderHero();
+  renderAssets();
+}
+
+function applyVisibilityUI() {
   const btn = document.getElementById('visibility-btn');
   const icon = document.getElementById('visibility-icon');
+  btn.setAttribute('aria-pressed', String(balancesVisible));
   icon.innerHTML = balancesVisible
     ? '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"></path><circle cx="12" cy="12" r="3"></circle>'
     : '<path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
   btn.style.opacity = balancesVisible ? '0.7' : '0.5';
-  renderHero();
-  renderAssets();
 }
 
 function render() { renderHero(); renderAssets(); }

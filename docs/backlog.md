@@ -19,6 +19,7 @@ Approved or active work belongs in [todo.md](./todo.md).
 - AI portfolio analysis and follow-up questions through OpenAI, proxied by
   `/api/advisor`.
 - MEP rate lookup from dolarapi.com, with manual editing.
+- The balance visibility choice is stored per user and restored at login.
 - Shared macro indicator records and read access through Supabase.
 - Mobile layout refinements, including navigation that does not cover the last
   portfolio items.
@@ -36,6 +37,7 @@ and scope before treating any as planned work.
 - Evaluate installable PWA and offline behavior.
 - Consider onboarding templates or an English-language interface.
 - Further improve and test the mobile experience across devices.
+- Improve security and privacy of the github repository, making it private instead of public.
 
 ## Removed or superseded from the old plan
 

@@ -210,7 +210,8 @@ and confirmed decisions:
 - It is a browser app built with plain HTML, CSS, and JavaScript, not React.
   There is no PWA manifest or offline service worker at present.
 - Users sign in with Supabase. Dashboard state is saved to Supabase per user;
-  user-scoped localStorage is also used by the current dashboard.
+  user-scoped localStorage is also used by the current dashboard. Balance
+  visibility preference is saved per account and restored at login.
 - The dashboard currently has Portafolio, Objetivos, and Advisor IA tabs.
   Assets and objectives can be added, edited, and deleted.
 - The MEP rate is fetched from dolarapi.com and can be edited manually. Shared
