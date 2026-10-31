@@ -32,5 +32,7 @@ This list tracks approved or active work.
 - [x] Added the macro indicators dashboard and shared `macro_data` refresh flow
 - [x] Made indicator refresh resilient to individual provider failures and cached-data fallback
 - [x] Moved Indicators after Advisor IA in the primary navigation
+- [x] Completed a frontend and serverless-handler dry run and commented out confirmed dead code
+- [x] Added a consistent coin favicon to the login and dashboard browser tabs
 - [x] Updated documentation index and design notes
 - [x] Kept docs aligned with current implementation status
