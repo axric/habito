@@ -1071,10 +1071,14 @@ function switchTab(tab) {
   const goalsTab  = document.getElementById('tab-goals');
   const aiTab     = document.getElementById('tab-ai');
   const fab       = document.getElementById('fab-btn');
+  const header    = document.querySelector('.header');
   portfolio.style.display = 'none';
   indicatorsTab.style.display = 'none';
   goalsTab.style.display  = 'none';
   aiTab.style.display     = 'none';
+  if (header) {
+    header.style.display = tab === 'portfolio' ? '' : 'none';
+  }
   if (tab === 'portfolio') {
     portfolio.style.display = 'block';
     fab.style.display = 'flex';
@@ -1167,12 +1171,14 @@ async function renderIndicators() {
       .filter(asset => (asset.type === 'Stock' || asset.type === 'ETF') && Number(asset.balance || 0) > 0)
       .map(asset => {
         const assetValue = toARSval(asset);
-        const pctOfTotal = totalARS() > 0 ? (assetValue / totalARS()) * 100 : 0;
+        const primaryValue = asset.currency === 'USD'
+          ? `u$s ${fmtNum(asset.balance, 2)}`
+          : `$ ${fmtNum(asset.balance, 0)}`;
         return {
           key: asset.id || asset.name,
           label: asset.name,
-          value: asset.currency === 'USD' ? `u$s ${fmtNum(asset.balance, 2)}` : `$ ${fmtNum(asset.balance, 2)}`,
-          change: `${fmtNum(pctOfTotal, 1)}% del total`,
+          value: primaryValue,
+          change: asset.currency === 'USD' ? `valor: ${fmtARS(assetValue)}` : `valor: ${fmtUSD(assetValue / safeRate())}`,
           changeColor: 'neu',
           sub: `${asset.type} · ${asset.currency}`,
         };
