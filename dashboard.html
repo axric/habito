@@ -1173,16 +1173,7 @@ async function fetchQuoteFromYahoo(symbol) {
   const query = String(symbol || '').trim();
   if (!query) return null;
 
-  const normalized = query
-    .replace(/\s*\([^)]*\)/g, '')
-    .replace(/[^A-Za-z0-9\-\.\^]/g, '')
-    .toUpperCase();
-  if (!normalized) return null;
-
-  try {
-    const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(normalized)}?range=1mo&interval=1d`);
-    if (!response.ok) return null;
-    const payload = await response.json();
+  const toQuotePayload = (payload) => {
     const result = Array.isArray(payload?.chart?.result) ? payload.chart.result[0] : null;
     if (!result) return null;
     const meta = result?.meta || {};
@@ -1193,10 +1184,57 @@ async function fetchQuoteFromYahoo(symbol) {
     if (!Number.isFinite(value)) return null;
     const change = previousClose && previousClose !== 0 ? ((value - previousClose) / previousClose) * 100 : 0;
     return { value, change };
-  } catch (error) {
-    console.warn('Unable to fetch quote for', symbol, error);
-    return null;
+  };
+
+  const rawCandidates = [];
+  const cleaned = query.replace(/\s*\([^)]*\)/g, '').trim();
+  const compact = cleaned.replace(/[^A-Za-z0-9\-\.\^]/g, '').toUpperCase();
+  if (compact) rawCandidates.push(compact);
+
+  const words = cleaned.split(/\s+/).filter(Boolean);
+  words.forEach(word => {
+    const token = word.replace(/[^A-Za-z0-9\-\.\^]/g, '').toUpperCase();
+    if (token && !rawCandidates.includes(token)) rawCandidates.push(token);
+  });
+
+  const candidates = [...new Set(rawCandidates.filter(Boolean))];
+
+  for (const candidate of candidates) {
+    try {
+      const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(candidate)}?range=1mo&interval=1d`);
+      if (response.ok) {
+        const payload = await response.json();
+        const quote = toQuotePayload(payload);
+        if (quote) return quote;
+      }
+    } catch (error) {
+      console.warn('Yahoo chart fetch failed for', candidate, error);
+    }
+
+    try {
+      const searchUrl = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(cleaned)}&quotesCount=10&newsCount=0&enableFuzzyQuery=false`;
+      const searchResponse = await fetch(searchUrl);
+      if (!searchResponse.ok) continue;
+      const searchPayload = await searchResponse.json();
+      const match = Array.isArray(searchPayload?.quotes)
+        ? searchPayload.quotes.find(quote => {
+            const symbol = String(quote?.symbol || '').trim();
+            if (!symbol) return false;
+            return symbol.toUpperCase() === candidate || symbol.toUpperCase().startsWith(candidate) || /[A-Z0-9\-\.\^]/.test(symbol);
+          })
+        : null;
+      if (!match?.symbol) continue;
+      const quoteResponse = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(match.symbol)}?range=1mo&interval=1d`);
+      if (!quoteResponse.ok) continue;
+      const quotePayload = await quoteResponse.json();
+      const quote = toQuotePayload(quotePayload);
+      if (quote) return quote;
+    } catch (error) {
+      console.warn('Yahoo search fallback failed for', candidate, error);
+    }
   }
+
+  return null;
 }
 
 async function renderIndicators() {
@@ -1246,17 +1284,26 @@ async function renderIndicators() {
       };
     }));
 
+    const treasuryCards = window.HabitoMacro.formatTreasuries(ready);
     const sections = [{
       title: 'Argentina',
-      items: cards.filter(card => [keys.DOLAR_OFICIAL, keys.DOLAR_MEP, keys.DOLAR_BLUE, keys.RIESGO_PAIS, keys.INFLACION_IPC].includes(card.key)),
+      items: cards.filter(card => [
+        keys.DOLAR_OFICIAL,
+        keys.DOLAR_MEP,
+        keys.DOLAR_BLUE,
+        keys.RIESGO_PAIS,
+        keys.INFLACION_IPC,
+        keys.INFLACION_INTERANUAL,
+        keys.INFLACION_ESPERADA,
+        keys.UVA,
+      ].includes(card.key)),
     }, {
       title: 'Internacional',
-      items: cards.filter(card => [keys.BRENT, keys.SP500, keys.BITCOIN].includes(card.key)),
+      items: [
+        ...cards.filter(card => [keys.BRENT, keys.WTI, keys.BITCOIN].includes(card.key)),
+        ...treasuryCards,
+      ],
       neutralTitle: true,
-    }, {
-      title: 'Bonos del Tesoro de EEUU',
-      items: window.HabitoMacro.formatTreasuries(ready),
-      compact: true,
     }];
 
     if (myStocks.length) {

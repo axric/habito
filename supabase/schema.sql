@@ -24,18 +24,21 @@ create table if not exists macro_data (
 
 -- Seed macro_data with known indicators
 insert into macro_data (key, label, value, change, context) values
-  ('dolar_oficial',  'Dólar Oficial BNA',  '1410',   '-0,35%',  null),
-  ('dolar_mep',      'Dólar MEP',          '1474',   '+2,71%',  null),
-  ('dolar_blue',     'Dólar Blue',         '1400',   '-1,06%',  null),
-  ('dolar_ccl',      'Dólar CCL',          '1503',   '+1,01%',  null),
-  ('riesgo_pais',    'Riesgo País EMBI+',  '582',    '+4,5%',   null),
-  ('inflacion_ipc',  'IPC — INDEC',        '3.4',    '-',       null),
-  ('brent',          'Brent Crude',        '65',     '-2,45%',  null),
-  ('sp500',          'S&P 500',            '7230',   '+0,29%',  null),
-  ('bitcoin',        'Bitcoin',            '78135',  '+2,53%',  null),
-  ('ust_1y',         'UST 1 año',          '4.85',   '-0,03%',  null),
-  ('ust_5y',         'UST 5 años',         '4.48',   '-0,04%',  null),
-  ('ust_10y',        'UST 10 años',        '4.35',   '-0,10%',  null)
+  ('dolar_oficial',        'Dólar Oficial BNA',   '1410',   '-0,35%',  null),
+  ('dolar_mep',            'Dólar MEP',           '1474',   '+2,71%',  null),
+  ('dolar_blue',           'Dólar Blue',          '1400',   '-1,06%',  null),
+  ('dolar_ccl',            'Dólar CCL',           '1503',   '+1,01%',  null),
+  ('riesgo_pais',          'Riesgo País EMBI+',   '582',    '+4,5%',   null),
+  ('inflacion_ipc',        'IPC — INDEC',         '3.4',    '-',       null),
+  ('inflacion_interanual',  'Inflación Interanual', '32.5',   '-',       null),
+  ('inflacion_esperada',   'Inflación Esperada',   '34.0',   '-',       null),
+  ('uva',                  'UVA',                 '4.5',    '-',       null),
+  ('brent',                'Brent Crude',         '65',     '-2,45%',  null),
+  ('wti',                  'WTI Crude',           '62',     '-1,92%',  null),
+  ('bitcoin',              'Bitcoin',             '78135',  '+2,53%',  null),
+  ('ust_1y',               'UST 1 año',           '4.85',   '-0,03%',  null),
+  ('ust_5y',               'UST 5 años',          '4.48',   '-0,04%',  null),
+  ('ust_10y',              'UST 10 años',         '4.35',   '-0,10%',  null)
 on conflict (key) do nothing;
 
 

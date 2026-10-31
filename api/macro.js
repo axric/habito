@@ -9,6 +9,25 @@ function toNumber(value) {
   return Number.isFinite(num) ? num : null;
 }
 
+function readLastValue(data) {
+  if (Array.isArray(data) && data.length) {
+    return readLastValue(data[data.length - 1]);
+  }
+  if (!data || typeof data !== 'object') return null;
+  const keys = ['valor', 'value', 'precio', 'indice', 'monto', 'cierre', 'last', 'ultimo'];
+  for (const key of keys) {
+    if (Object.prototype.hasOwnProperty.call(data, key)) {
+      const value = toNumber(data[key]);
+      if (value !== null) return value;
+    }
+  }
+  for (const key of Object.keys(data)) {
+    const value = toNumber(data[key]);
+    if (value !== null) return value;
+  }
+  return null;
+}
+
 function percentChange(current, previous) {
   if (!Number.isFinite(current) || !Number.isFinite(previous) || previous === 0) return null;
   const delta = ((current - previous) / Math.abs(previous)) * 100;
@@ -40,18 +59,30 @@ async function fetchDolarRate(type) {
 }
 
 async function fetchArgentinaInflacion() {
-  const data = await fetchJson('https://argentinadatos.com/v1/finanzas/indices/inflacion');
-  if (!Array.isArray(data) || !data.length) return null;
-  const last = data[data.length - 1];
-  const value = toNumber(last?.valor ?? last?.value ?? last?.precio ?? last?.indice);
-  return Number.isFinite(value) ? value : null;
+  const data = await fetchJson('https://api.argentinadatos.com/v1/finanzas/indices/inflacion');
+  return readLastValue(data);
+}
+
+async function fetchArgentinaInflacionInteranual() {
+  const data = await fetchJson('https://api.argentinadatos.com/v1/finanzas/indices/inflacionInteranual');
+  return readLastValue(data);
+}
+
+async function fetchArgentinaInflacionEsperada() {
+  const data = await fetchJson('https://api.argentinadatos.com/v1/finanzas/rem');
+  return readLastValue(data);
 }
 
 async function fetchArgentinaRiskPais() {
-  const url = 'https://argentinadatos.com/v1/finanzas/indices/riesgo-pais/ultimo';
+  const url = 'https://api.argentinadatos.com/v1/finanzas/indices/riesgo-pais/ultimo';
   const data = await fetchJson(url);
   const value = toNumber(data?.valor ?? data?.value ?? data?.riesgo_pais ?? data?.indice);
   return Number.isFinite(value) ? value : null;
+}
+
+async function fetchArgentinaUVA() {
+  const data = await fetchJson('https://api.argentinadatos.com/v1/finanzas/indices/uva');
+  return readLastValue(data);
 }
 
 async function fetchFredSeries(seriesId) {
@@ -101,11 +132,14 @@ function mapRows(raw) {
   pushRow('dolar_blue', 'Dólar Blue', raw.dolarBlue, null, 'Fuente: dolarapi.com');
   pushRow('riesgo_pais', 'Riesgo País EMBI+', raw.riesgoPais, null, 'Fuente: argentinadatos.com');
   pushRow('inflacion_ipc', 'IPC — INDEC', raw.inflacionIpc, null, 'Fuente: argentinadatos.com');
+  pushRow('inflacion_interanual', 'Inflación Interanual', raw.inflacionInteranual, null, 'Fuente: argentinadatos.com');
+  pushRow('inflacion_esperada', 'Inflación Esperada', raw.inflacionEsperada, null, 'Fuente: argentinadatos.com');
+  pushRow('uva', 'UVA', raw.uva, null, 'Fuente: argentinadatos.com');
   pushRow('ust_1y', 'UST 1 año', raw.ust1y, raw.ust1yChange, 'Fuente: FRED');
   pushRow('ust_5y', 'UST 5 años', raw.ust5y, raw.ust5yChange, 'Fuente: FRED');
   pushRow('ust_10y', 'UST 10 años', raw.ust10y, raw.ust10yChange, 'Fuente: FRED');
   pushRow('brent', 'Brent Crude', raw.brent, raw.brentChange, 'Fuente: FRED');
-  pushRow('sp500', 'S&P 500', raw.sp500, raw.sp500Change, 'Fuente: Yahoo Finance');
+  pushRow('wti', 'WTI Crude', raw.wti, raw.wtiChange, 'Fuente: FRED');
   pushRow('bitcoin', 'Bitcoin', raw.bitcoin, raw.bitcoinChange, 'Fuente: Yahoo Finance');
 
   return rows;
@@ -173,17 +207,20 @@ module.exports = async function handler(request, response) {
       return;
     }
 
-    const [dolarOficial, dolarMep, dolarBlue, inflacion, riesgoPais, ust1y, ust5y, ust10y, brent, sp500, bitcoin] = await Promise.all([
+    const [dolarOficial, dolarMep, dolarBlue, inflacion, inflacionInteranual, inflacionEsperada, riesgoPais, uva, ust1y, ust5y, ust10y, brent, wti, bitcoin] = await Promise.all([
       fetchDolarRate('oficial'),
       fetchDolarRate('mep'),
       fetchDolarRate('blue'),
       fetchArgentinaInflacion(),
+      fetchArgentinaInflacionInteranual(),
+      fetchArgentinaInflacionEsperada(),
       fetchArgentinaRiskPais(),
+      fetchArgentinaUVA(),
       fetchFredSeries('DGS1'),
       fetchFredSeries('DGS5'),
       fetchFredSeries('DGS10'),
       fetchFredSeries('DCOILBRENTEU'),
-      fetchYahooTicker('^GSPC'),
+      fetchFredSeries('DCOILWTICO'),
       fetchYahooTicker('BTC-USD'),
     ]);
 
@@ -192,7 +229,10 @@ module.exports = async function handler(request, response) {
       dolarMep: dolarMep,
       dolarBlue: dolarBlue,
       inflacionIpc: inflacion,
+      inflacionInteranual: inflacionInteranual,
+      inflacionEsperada: inflacionEsperada,
       riesgoPais: riesgoPais,
+      uva: uva,
       ust1y: ust1y?.value,
       ust1yChange: ust1y?.change,
       ust5y: ust5y?.value,
@@ -201,8 +241,8 @@ module.exports = async function handler(request, response) {
       ust10yChange: ust10y?.change,
       brent: brent?.value,
       brentChange: brent?.change,
-      sp500: sp500?.value,
-      sp500Change: sp500?.change,
+      wti: wti?.value,
+      wtiChange: wti?.change,
       bitcoin: bitcoin?.value,
       bitcoinChange: bitcoin?.change,
     });
