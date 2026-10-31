@@ -34,6 +34,15 @@ function percentChange(current, previous) {
   return delta;
 }
 
+async function fetchOptionalSource(label, operation) {
+  try {
+    return await operation();
+  } catch (error) {
+    console.warn(`Macro source unavailable: ${label}`);
+    return null;
+  }
+}
+
 async function fetchJson(url, init = {}) {
   const response = await fetch(url, {
     headers: {
@@ -261,20 +270,20 @@ module.exports = async function handler(request, response) {
     const body = request.body || {};
     const requestedSymbols = Array.isArray(body.symbols) ? body.symbols : [];
     const [dolarOficial, dolarMep, dolarBlue, inflacion, inflacionInteranual, inflacionEsperada, riesgoPais, uva, ust1y, ust5y, ust10y, brent, wti, bitcoin] = await Promise.all([
-      fetchDolarRate('oficial'),
-      fetchDolarRate('mep'),
-      fetchDolarRate('blue'),
-      fetchArgentinaInflacion(),
-      fetchArgentinaInflacionInteranual(),
-      fetchArgentinaInflacionEsperada(),
-      fetchArgentinaRiskPais(),
-      fetchArgentinaUVA(),
-      fetchFredSeries('DGS1'),
-      fetchFredSeries('DGS5'),
-      fetchFredSeries('DGS10'),
-      fetchFredSeries('DCOILBRENTEU'),
-      fetchFredSeries('DCOILWTICO'),
-      fetchYahooTicker('BTC-USD'),
+      fetchOptionalSource('dolar oficial', () => fetchDolarRate('oficial')),
+      fetchOptionalSource('dolar MEP', () => fetchDolarRate('mep')),
+      fetchOptionalSource('dolar blue', () => fetchDolarRate('blue')),
+      fetchOptionalSource('inflacion', fetchArgentinaInflacion),
+      fetchOptionalSource('inflacion interanual', fetchArgentinaInflacionInteranual),
+      fetchOptionalSource('inflacion esperada', fetchArgentinaInflacionEsperada),
+      fetchOptionalSource('riesgo pais', fetchArgentinaRiskPais),
+      fetchOptionalSource('UVA', fetchArgentinaUVA),
+      fetchOptionalSource('UST 1Y', () => fetchFredSeries('DGS1')),
+      fetchOptionalSource('UST 5Y', () => fetchFredSeries('DGS5')),
+      fetchOptionalSource('UST 10Y', () => fetchFredSeries('DGS10')),
+      fetchOptionalSource('Brent', () => fetchFredSeries('DCOILBRENTEU')),
+      fetchOptionalSource('WTI', () => fetchFredSeries('DCOILWTICO')),
+      fetchOptionalSource('Bitcoin', () => fetchYahooTicker('BTC-USD')),
     ]);
 
     const rows = mapRows({
@@ -306,7 +315,7 @@ module.exports = async function handler(request, response) {
       ...stockRows.filter(Boolean),
     ];
 
-    const written = await upsertMacroRows(mergedRows);
+    const written = mergedRows.length ? await upsertMacroRows(mergedRows) : [];
 
     response.setHeader('Cache-Control', 'no-store');
     response.status(200).json({

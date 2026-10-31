@@ -1099,10 +1099,9 @@ function switchTab(tab) {
     indicatorsTab.style.display = 'block';
     fab.style.display = 'none';
     const needsRefresh = !window.habitoMacroData || Object.keys(window.habitoMacroData || {}).length === 0 || Date.now() - getMacroRefreshStamp() > 1000 * 60 * 60 * 24;
+    renderIndicators();
     if (needsRefresh) {
-      refreshMacroIndicators().catch(() => {});
-    } else {
-      renderIndicators();
+      refreshMacroIndicators({ silent: true }).catch(() => {});
     }
   } else if (tab === 'goals') {
     goalsTab.style.display = 'block';
@@ -1338,7 +1337,7 @@ async function renderIndicators() {
   }
 }
 
-async function refreshMacroIndicators() {
+async function refreshMacroIndicators({ silent = false } = {}) {
   const refreshBtn = document.querySelector('.macro-refresh-btn');
   if (refreshBtn) {
     refreshBtn.disabled = true;
@@ -1357,7 +1356,8 @@ async function refreshMacroIndicators() {
     showToast('Indicadores actualizados.');
   } catch (error) {
     console.error('Macro refresh failed.', error);
-    showToast(error.message || 'No se pudieron actualizar los indicadores.');
+    await renderIndicators();
+    if (!silent) showToast('No se pudieron actualizar los indicadores. Se muestran los últimos datos disponibles.');
   } finally {
     if (refreshBtn) {
       refreshBtn.disabled = false;
