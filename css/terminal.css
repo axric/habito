@@ -17,6 +17,13 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
 .hero-label{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;}
 .hero-usd{font-size:34px;font-weight:700;color:var(--fg);line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .hero-ars{font-size:10px;font-weight:300;color:var(--muted);margin-top:4px;}
+.hero-portfolio-row{display:flex;align-items:center;gap:8px;margin-top:12px;}
+.hero-portfolio-picker{display:flex;align-items:center;flex-wrap:wrap;gap:6px;flex:1;min-width:0;}
+.hero-portfolio-option{background:rgba(255,255,255,0.02);border:1px solid rgba(98,114,164,0.35);border-radius:999px;padding:4px 8px;color:var(--muted);font-size:9px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;transition:all .15s ease;}
+.hero-portfolio-option.active{background:rgba(189,147,249,0.14);border-color:rgba(189,147,249,0.5);color:var(--purple);}
+.hero-portfolio-option:not(.active):hover{color:var(--fg);border-color:rgba(189,147,249,0.28);}
+.hero-portfolio-new{background:none;border:1px dashed rgba(98,114,164,0.4);border-radius:999px;padding:4px 8px;color:var(--muted);font-size:9px;font-weight:600;cursor:pointer;transition:all .15s ease;}
+.hero-portfolio-new:hover{border-color:rgba(189,147,249,0.5);color:var(--fg);}
 .rate-row{display:flex;align-items:center;gap:6px;margin-top:10px;}
 .rate-label{font-size:9px;color:var(--muted);}
 .rate-val{font-size:11px;font-weight:700;color:var(--cyan);cursor:pointer;}

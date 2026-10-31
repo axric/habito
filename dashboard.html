@@ -34,6 +34,10 @@
         <button class="rate-btn" onclick="toggleRateEdit()" title="Editar tipo de cambio">✎</button>
         <span id="rate-status" style="font-size:9px;color:var(--muted);"></span>
       </div>
+      <div class="hero-portfolio-row">
+        <div class="hero-portfolio-picker" id="hero-portfolio-picker" aria-label="Seleccionar cartera"></div>
+        <button type="button" class="hero-portfolio-new" id="portfolio-create-btn" onclick="createPortfolioPrompt()" title="Crear nueva cartera">+ nuevo</button>
+      </div>
     </div>
   </div>
   <div class="scroll-area">
@@ -263,14 +267,69 @@ const SK = {
 };
 
 let currentUserId = null;
-const PORTFOLIO_TYPES = ['main', 'retirement'];
+const BASE_PORTFOLIO_TYPES = ['main', 'retirement'];
 const LEGACY_PORTFOLIO_MAP = { personal: 'main', family: 'retirement' };
 let activePortfolio = 'main';
 
+function getCustomPortfolioTypes() {
+  if (!currentUserId) return [];
+  try {
+    const raw = localStorage.getItem(getUserStorageKey('customPortfolios'));
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter(type => typeof type === 'string' && type.trim()).map(type => type.trim()) : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function getPortfolioTypes() {
+  return [...BASE_PORTFOLIO_TYPES, ...getCustomPortfolioTypes()];
+}
+
 function normalizePortfolioType(type) {
   if (!type) return 'main';
-  if (PORTFOLIO_TYPES.includes(type)) return type;
+  const known = getPortfolioTypes();
+  if (known.includes(type)) return type;
   return LEGACY_PORTFOLIO_MAP[type] || 'main';
+}
+
+function getPortfolioLabel(type) {
+  const labels = { main: 'Main', retirement: '2050' };
+  return labels[type] || type.replace(/-/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+}
+
+function slugifyPortfolioName(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || '';
+}
+
+function persistCustomPortfolioTypes(types) {
+  if (!currentUserId) return;
+  localStorage.setItem(getUserStorageKey('customPortfolios'), JSON.stringify(types));
+}
+
+function createPortfolioPrompt() {
+  const name = window.prompt('Nombre de la nueva cartera', 'Meta');
+  if (name === null) return;
+  const slug = slugifyPortfolioName(name);
+  if (!slug) {
+    window.alert('Ingresá un nombre válido para la cartera.');
+    return;
+  }
+  if (BASE_PORTFOLIO_TYPES.includes(slug) || getCustomPortfolioTypes().includes(slug)) {
+    window.alert('Ese nombre ya existe. Elegí otro.');
+    return;
+  }
+  const next = [...getCustomPortfolioTypes(), slug];
+  persistCustomPortfolioTypes(next);
+  activePortfolio = slug;
+  localStorage.setItem(getUserStorageKey('activePortfolio'), activePortfolio);
+  updatePortfolioButtons();
+  loadStorage();
+  render();
 }
 
 function getUserStorageKey(name) {
@@ -315,17 +374,43 @@ function setUserStorageScope(userId) {
 }
 
 function updatePortfolioButtons() {
-  document.querySelectorAll('[data-portfolio-toggle]').forEach(element => {
-    const isActive = element.dataset.portfolioToggle === activePortfolio;
-    element.classList.toggle('active', isActive);
-    element.classList.toggle('inactive', !isActive);
-    element.setAttribute('aria-pressed', String(isActive));
-  });
+  const types = getPortfolioTypes();
+  const picker = document.getElementById('hero-portfolio-picker');
+  if (picker) {
+    picker.innerHTML = types.map(type => {
+      const isActive = type === activePortfolio;
+      return `
+        <button
+          type="button"
+          class="hero-portfolio-option ${isActive ? 'active' : ''}"
+          data-hero-portfolio-toggle="${type}"
+          aria-pressed="${String(isActive)}"
+          onclick="switchPortfolio('${type}')"
+        >${getPortfolioLabel(type)}</button>
+      `;
+    }).join('');
+  }
+
+  const switcher = document.querySelector('.portfolio-switch');
+  if (switcher) {
+    switcher.innerHTML = types.map(type => {
+      const isActive = type === activePortfolio;
+      return `
+        <button
+          type="button"
+          class="portfolio-toggle ${isActive ? 'active' : 'inactive'}"
+          data-portfolio-toggle="${type}"
+          aria-pressed="${String(isActive)}"
+          onclick="switchPortfolio('${type}')"
+        >${getPortfolioLabel(type)}</button>
+      `;
+    }).join('');
+  }
 }
 
 function switchPortfolio(type) {
   const next = normalizePortfolioType(type);
-  if (!PORTFOLIO_TYPES.includes(next) || next === activePortfolio) return;
+  if (!getPortfolioTypes().includes(next) || next === activePortfolio) return;
   persist();
   activePortfolio = next;
   localStorage.setItem(getUserStorageKey('activePortfolio'), activePortfolio);
@@ -335,12 +420,15 @@ function switchPortfolio(type) {
 }
 
 function currentUserData() {
+  const portfolioState = {};
+  getPortfolioTypes().forEach(type => {
+    portfolioState[type] = snapshotPortfolioState(type);
+  });
+
   return {
     activePortfolio,
-    portfolioState: {
-      main: snapshotPortfolioState('main'),
-      retirement: snapshotPortfolioState('retirement'),
-    },
+    customPortfolios: getCustomPortfolioTypes(),
+    portfolioState,
     rate: usdRate,
     budget,
     budgetCurrency,
@@ -378,7 +466,7 @@ function getLegacyPortfolioStorageKey(type, name) {
 
 function getAllPortfolioAssets() {
   if (!currentUserId) return [];
-  const assetsByType = PORTFOLIO_TYPES.flatMap(type => {
+  const assetsByType = getPortfolioTypes().flatMap(type => {
     const storageKey = `habito_${currentUserId}_${type}_assets`;
     const raw = localStorage.getItem(storageKey);
     if (!raw) {
@@ -1862,13 +1950,16 @@ window.habitoStartDashboard = async user => {
   const saved = await window.HabitoData.load(user.id);
   if (saved) {
     advisorReport = saved.advisorReport || null;
+    const customPortfolios = Array.isArray(saved.customPortfolios) ? saved.customPortfolios : getCustomPortfolioTypes();
+    persistCustomPortfolioTypes(customPortfolios);
     const portfolioState = saved.portfolioState || {};
     const normalizedActivePortfolio = normalizePortfolioType(saved.activePortfolio);
-    if (PORTFOLIO_TYPES.includes(normalizedActivePortfolio)) {
+    const availableTypes = getPortfolioTypes();
+    if (availableTypes.includes(normalizedActivePortfolio)) {
       activePortfolio = normalizedActivePortfolio;
       localStorage.setItem(getUserStorageKey('activePortfolio'), activePortfolio);
     }
-    PORTFOLIO_TYPES.forEach(type => {
+    availableTypes.forEach(type => {
       const legacyType = Object.entries(LEGACY_PORTFOLIO_MAP).find(([_, mapped]) => mapped === type)?.[0];
       const state = portfolioState[type] || portfolioState[legacyType] || {};
       const bucket = `habito_${user.id}_${type}`;
@@ -1880,7 +1971,7 @@ window.habitoStartDashboard = async user => {
       });
     });
     Object.entries(saved).forEach(([key, value]) => {
-      if (key === 'portfolioState' || key === 'activePortfolio') return;
+      if (key === 'portfolioState' || key === 'activePortfolio' || key === 'customPortfolios') return;
       if (['assets','budget','budgetCurrency','rebalanceo','goals','aporteDay','aporteState','rate','streak'].includes(key) && value !== null && value !== undefined) {
         localStorage.setItem(getUserStorageKey(key === 'rate' ? 'rate' : key), typeof value === 'string' ? value : JSON.stringify(value));
       }
