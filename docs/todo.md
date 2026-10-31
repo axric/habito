@@ -1,17 +1,20 @@
-# Todo list
+# Todo
 
-Track only user-requested or user-approved work that is not yet complete.
-Move uncommitted ideas to `backlog.md`. Remove or mark items complete after
-implementation and validation; do not leave finished work looking pending.
-
-There are currently no approved project tasks recorded here. Possible future
-features are listed separately in [backlog.md](./backlog.md); they are not
-commitments until approved.
+This list tracks approved or active work.
 
 ## In progress
+- [ ] Confirm whether the app should allow custom portfolio names beyond Main and 2050
+- [ ] Validate the advisor wording for retirement-oriented recommendations
+- [ ] Review portfolio migration compatibility for existing users with older personal/family state
 
-_No active tasks have been recorded yet._
+## Pending
+- [ ] Add optional portfolio labels for users who want custom names
+- [ ] Review onboarding copy for main vs retirement bucket setup
+- [ ] Improve recovery UX for reset-password and account editing flows
+- [ ] Consider portfolio export and backup support
 
-## Next
-
-_No approved pending tasks have been recorded yet._
+## Completed
+- [x] Added two portfolio buckets: Main and 2050
+- [x] Enabled cross-portfolio goal linking for selected assets
+- [x] Updated documentation index and design notes
+- [x] Kept docs aligned with current implementation status

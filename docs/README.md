@@ -1,30 +1,24 @@
-# Project knowledge
+# Documentation index
 
-This folder holds product context for people and AI agents working on Habito.
-The code is the source of truth for current behavior; these notes explain the
-design intent, known status, and possible future work. Keep them concise and
-update them when implementation or product decisions change.
+This folder holds the current project context and working references for Habito.
 
-- [Design and UX](./design.md) — current visual language and interaction guidance.
-- [Financial books](./financial-books.md) — titles and authors for reference.
-- [Backlog](./backlog.md) — possible future work, including unconfirmed ideas
-  carried forward from an older plan.
-- [Todo list](./todo.md) — user-approved work currently in progress or pending.
-- [Original product specification](./habito_spec_v1.md) — historical v1
-  product/technical plan; some details have been superseded by the current app.
+## Current docs
+- [design.md](./design.md) — current UX and product intent
+- [backlog.md](./backlog.md) — ideas and future work
+- [todo.md](./todo.md) — active work queue
+- [financial-books.md](./financial-books.md) — reference books used for product guidance
 
-## Current implementation at a glance
+## Project snapshot
+- Frontend: static HTML/CSS/JS app hosted on Vercel
+- Auth + persistence: Supabase Auth + Supabase tables
+- AI advisor: /api/advisor route backed by OpenAI
+- Market data: dolarapi.com for USD rate
+- Portfolio model: two default user buckets — Main and 2050
+- Goals can link assets across both portfolios
 
-- Spanish-first browser app built with plain HTML, CSS, and JavaScript; no
-  frontend build step or framework.
-- Vercel serves the pages and API routes.
-- Supabase provides authentication and database storage. The current dashboard
-  persists one JSON state document per signed-in user in `user_data`; the
-  schema also defines structured portfolio, asset, and objective tables.
-- The dashboard supports asset and goal management, contribution planning,
-  allocation/rebalancing, and an AI advisor.
-- The advisor is a Vercel API route that calls OpenAI. The dashboard also gets
-  the MEP exchange rate directly from dolarapi.com.
-- `macro_data` is a shared table seeded with baseline values; automated market
-  data refresh is not currently implemented.
+## Naming convention
+The app currently uses two portfolio buckets:
+- Main: default investing bucket for ongoing portfolio management
+- 2050: long-term retirement allocation
 
+These names are product-facing and should stay in English unless the UI is intentionally localized to Spanish for a specific screen.

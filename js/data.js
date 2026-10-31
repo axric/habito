@@ -12,51 +12,51 @@ import { supabase } from './auth.js';
 
 /**
  * getPortfolios()
- * Returns both portfolios (family + personal) for the current user.
- * { family: Portfolio | null, personal: Portfolio | null, error }
+ * Returns both portfolios (main + retirement) for the current user.
+ * { main: Portfolio | null, retirement: Portfolio | null, error }
  */
 export async function getPortfolios() {
   const { data, error } = await supabase
     .from('portfolios')
     .select('*')
-    .order('type');                     // 'family' < 'personal' alphabetically
+    .order('type');                     // 'main' < 'retirement' alphabetically
 
-  if (error) return { family: null, personal: null, error: error.message };
+  if (error) return { main: null, retirement: null, error: error.message };
 
-  const family   = data.find(p => p.type === 'family')   ?? null;
-  const personal = data.find(p => p.type === 'personal') ?? null;
+  const main      = data.find(p => p.type === 'main')      ?? null;
+  const retirement = data.find(p => p.type === 'retirement') ?? null;
 
-  return { family, personal, error: null };
+  return { main, retirement, error: null };
 }
 
 
 /**
  * ensurePortfolios(user)
- * Creates family + personal portfolios for a user if they don't exist yet.
+ * Creates main + retirement portfolios for a user if they don't exist yet.
  * Call once after first login.
- * Returns { family, personal, error }
+ * Returns { main, retirement, error }
  */
 export async function ensurePortfolios(user) {
-  const { family, personal, error: fetchError } = await getPortfolios();
-  if (fetchError) return { family: null, personal: null, error: fetchError };
+  const { main, retirement, error: fetchError } = await getPortfolios();
+  if (fetchError) return { main: null, retirement: null, error: fetchError };
 
   const toCreate = [];
-  if (!family)   toCreate.push({ user_id: user.id, type: 'family',   label: 'Inversiones Familia' });
-  if (!personal) toCreate.push({ user_id: user.id, type: 'personal', label: 'Inversiones Personales' });
+  if (!main)      toCreate.push({ user_id: user.id, type: 'main',      label: 'Main Portfolio' });
+  if (!retirement) toCreate.push({ user_id: user.id, type: 'retirement', label: '2050' });
 
-  if (toCreate.length === 0) return { family, personal, error: null };
+  if (toCreate.length === 0) return { main, retirement, error: null };
 
   const { data, error } = await supabase
     .from('portfolios')
     .insert(toCreate)
     .select();
 
-  if (error) return { family: null, personal: null, error: error.message };
+  if (error) return { main: null, retirement: null, error: error.message };
 
-  const all = [family, personal, ...data].filter(Boolean);
+  const all = [main, retirement, ...data].filter(Boolean);
   return {
-    family:   all.find(p => p.type === 'family')   ?? null,
-    personal: all.find(p => p.type === 'personal') ?? null,
+    main:      all.find(p => p.type === 'main')      ?? null,
+    retirement: all.find(p => p.type === 'retirement') ?? null,
     error: null,
   };
 }
@@ -202,36 +202,36 @@ window.HabitoData = { load, save };
 /**
  * loadPortfolioData(user)
  * Convenience function — loads everything needed to render the dashboard.
- * Returns { family, personal, familyAssets, personalAssets,
- *           familyObjectives, personalObjectives, error }
+ * Returns { main, retirement, mainAssets, retirementAssets,
+ *           mainObjectives, retirementObjectives, error }
  */
 export async function loadPortfolioData(user) {
   // Ensure portfolios exist (safe to call every login)
-  const { family, personal, error: pErr } = await ensurePortfolios(user);
+  const { main, retirement, error: pErr } = await ensurePortfolios(user);
   if (pErr) return { error: pErr };
 
   // Load assets and objectives in parallel
   const [
-    { assets: familyAssets,       error: faErr },
-    { assets: personalAssets,     error: paErr },
-    { objectives: familyObjs,     error: foErr },
-    { objectives: personalObjs,   error: poErr },
+    { assets: mainAssets,          error: maErr },
+    { assets: retirementAssets,    error: raErr },
+    { objectives: mainObjectives,  error: moErr },
+    { objectives: retirementObjs,  error: roErr },
   ] = await Promise.all([
-    getAssets(family.id),
-    getAssets(personal.id),
-    getObjectives(family.id),
-    getObjectives(personal.id),
+    getAssets(main.id),
+    getAssets(retirement.id),
+    getObjectives(main.id),
+    getObjectives(retirement.id),
   ]);
 
-  const error = faErr || paErr || foErr || poErr || null;
+  const error = maErr || raErr || moErr || roErr || null;
 
   return {
-    family,
-    personal,
-    familyAssets,
-    personalAssets,
-    familyObjectives:  familyObjs,
-    personalObjectives: personalObjs,
+    main,
+    retirement,
+    mainAssets,
+    retirementAssets,
+    mainObjectives,
+    retirementObjectives: retirementObjs,
     error,
   };
 }

@@ -1,52 +1,23 @@
-# Habito — Backlog
+# Backlog
 
-**Status snapshot:** October 2026  
-**Source:** Older backlog reconciled with the current repository.
+This backlog contains deferred or future-facing ideas that have not been approved as active work yet.
 
-This list contains future possibilities, not approved commitments. The old
-phase checklist incorrectly showed several shipped features as pending and
-named a Claude/Anthropic integration that is not used by the current app.
-Approved or active work belongs in [todo.md](./todo.md).
+## Potential enhancements
+- Add normalized multi-account user management and recovery flow
+- Add multi-portfolio configuration beyond the current two built-in buckets
+- Allow editing portfolio labels and custom bucket names
+- Add import/export of portfolio snapshots
+- Add monthly reports and historical charts
+- Add richer advisor follow-ups for tax, FX, and retirement planning
+- Add per-portfolio summary cards and comparisons
 
-## Implemented
+## Current status
+The following items are implemented or in active use:
+- Main + 2050 buckets
+- Per-bucket asset and objective data
+- Cross-portfolio goal linking
+- User-scoped persistence
+- Streak and balance visibility state
 
-- Supabase schema, authentication, Vercel hosting, and API routes.
-- Per-user dashboard state synchronization with Supabase.
-- Portfolio assets and financial objectives can be created, edited, and
-  deleted.
-- Portfolio allocation, monthly contribution planning, streak display, and
-  three dashboard tabs (Portafolio, Objetivos, Advisor IA).
-- AI portfolio analysis and follow-up questions through OpenAI, proxied by
-  `/api/advisor`.
-- MEP rate lookup from dolarapi.com, with manual editing.
-- The balance visibility choice is stored per user and restored at login.
-- Shared macro indicator records and read access through Supabase.
-- Mobile layout refinements, including navigation that does not cover the last
-  portfolio items.
-
-## Possible future work (not yet approved)
-
-These items were carried forward from the previous backlog. Confirm priority
-and scope before treating any as planned work.
-
-- Automatically fetch and refresh shared macro indicators from reliable
-  providers; currently `macro_data` is seeded and has no scheduled updater.
-- Add investment growth projections or historical performance views.
-- Add user-configurable market or portfolio notifications.
-- Export portfolio data or reports (for example JSON, CSV, or PDF).
-- Evaluate installable PWA and offline behavior.
-- Consider onboarding templates or an English-language interface.
-- Further improve and test the mobile experience across devices.
-- Improve security and privacy of the github repository, making it private instead of public.
-
-## Removed or superseded from the old plan
-
-- The old tasks for Supabase setup, login, Vercel deployment, CRUD, and an AI
-  integration are complete in the current repository.
-- The proposed Anthropic/Claude integration is superseded by the OpenAI-backed
-  `/api/advisor` endpoint.
-- The old hard-coded sample `fam`/`per` portfolio, static alignment analysis,
-  and USD reference-rate bugs refer to an earlier app and are not current
-  dashboard items.
-- Automated refresh of `macro_data` is not implemented; do not represent
-  seeded indicators as automatically current.
+## Notes
+Backlog items should be treated as ideas, not as current product truth. Only approved work belongs in the active todo list.

@@ -45,8 +45,8 @@ on conflict (key) do nothing;
 create table if not exists portfolios (
   id          uuid primary key default uuid_generate_v4(),
   user_id     uuid not null references auth.users(id) on delete cascade,
-  type        text not null check (type in ('family', 'personal')),
-  label       text,                   -- display name, e.g. 'Inversiones Familia'
+  type        text not null check (type in ('main', 'retirement')),
+  label       text,                   -- display name, e.g. 'Main Portfolio' / '2050'
   description text,                   -- shown in portfolio analysis box
   created_at  timestamptz default now(),
   unique (user_id, type)

@@ -1,22 +1,10 @@
 **HABITO**
+
+> Historical document — this file reflects the original v1 product concept and is not the live source of truth for the current app. The active product truth lives in the current app code and in the docs in this folder.
  
 Product Specification Document
  
 v1.0  ·  Investment Habit Tracker  ·  PWA
-
-> **Status note (October 2026):** This is the original product specification,
-> retained as historical context, not a statement of current implementation.
-> The current app is a plain HTML/CSS/JavaScript web app hosted on Vercel, uses
-> Supabase Auth and cloud storage, and calls OpenAI through a serverless API.
-> It does not currently have a React frontend, PWA manifest/service worker,
-> offline mode, English toggle, or the local-only privacy model described
-> below. See [the current project overview](./README.md),
-> [design and UX](./design.md), and [backlog](./backlog.md) for current status.
-> This file is in a public repository; the “Confidential” footer below is part
-> of the original document and does not describe repository visibility.
-> The financial descriptions and recommendations in this archived draft are
-> proposals from that document, not verified financial guidance or current
-> product behavior.
  
 # 1. Purpose & Vision
  

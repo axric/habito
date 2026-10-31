@@ -2,9 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Habito — Portafolio</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪙</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/terminal.css">
 </head>
@@ -19,7 +18,7 @@
     <div class="hero-card">
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
         <div class="hero-label" id="hero-label" style="margin-bottom:0;">TOTAL</div>
-        <button id="visibility-btn" onclick="toggleVisibility()" aria-pressed="true" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:0;line-height:1;display:flex;align-items:center;opacity:0.7;" title="Mostrar/ocultar saldos">
+        <button id="visibility-btn" onclick="toggleVisibility()" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:0;line-height:1;display:flex;align-items:center;opacity:0.7;" title="Mostrar/ocultar saldos">
           <svg id="visibility-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"></path>
             <circle cx="12" cy="12" r="3"></circle>
@@ -54,6 +53,10 @@
         <button onclick="manualAporteReset()" title="Reiniciar aporte ahora" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:9px;padding:0;margin-left:4px;text-decoration:underline;opacity:0.7;">reiniciar ahora</button>
       </div>
       <div id="aporte-surplus" style="display:none;font-size:9px;color:var(--muted);padding:6px 2px 0;"></div>
+    </div>
+    <div class="portfolio-switch" aria-label="Seleccionar cartera">
+      <button type="button" class="portfolio-toggle active" data-portfolio-toggle="main" onclick="switchPortfolio('main')">Main</button>
+      <button type="button" class="portfolio-toggle" data-portfolio-toggle="retirement" onclick="switchPortfolio('retirement')">2050</button>
     </div>
     <div class="section-label">
       <span>ACTIVOS</span>
@@ -164,9 +167,9 @@
       </label>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-purple" onclick="saveAsset()">Guardar</button>
-      <button class="btn" onclick="closeModal()">Cancelar</button>
       <button class="btn btn-red" id="btn-delete" style="display:none;" onclick="confirmDelete()">Eliminar</button>
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-purple" onclick="saveAsset()">Guardar</button>
     </div>
   </div>
 </div>
@@ -256,17 +259,99 @@ const TYPE_LABEL_MAP = { Crypto:'Crypto', Stock:'Acción', ETF:'ETF', FCI:'FCI',
 const SK = {
   assets: 'assets', rate: 'rate', budget: 'budget', budgetCurrency: 'budgetCurrency',
   rebalanceo: 'rebalanceo', streak: 'streak', goals: 'goals', aporteDay: 'aporteDay',
-  aporteState: 'aporteState', balancesVisible: 'balancesVisible',
+  aporteState: 'aporteState',
 };
 
 let currentUserId = null;
+const PORTFOLIO_TYPES = ['main', 'retirement'];
+const LEGACY_PORTFOLIO_MAP = { personal: 'main', family: 'retirement' };
+let activePortfolio = 'main';
+
+function normalizePortfolioType(type) {
+  if (!type) return 'main';
+  if (PORTFOLIO_TYPES.includes(type)) return type;
+  return LEGACY_PORTFOLIO_MAP[type] || 'main';
+}
+
+function getUserStorageKey(name) {
+  return `habito_${currentUserId}_${name}`;
+}
+
+function getPortfolioStorageKey(name, portfolioType = activePortfolio) {
+  return `habito_${currentUserId}_${portfolioType}_${name}`;
+}
+
+function getStorageKey(name) {
+  const portfolioScoped = ['assets', 'budget', 'budgetCurrency', 'rebalanceo', 'goals', 'aporteDay', 'aporteState'];
+  return portfolioScoped.includes(name)
+    ? getPortfolioStorageKey(name)
+    : getUserStorageKey(name);
+}
+
+function snapshotPortfolioState(portfolioType) {
+  const keyBase = `habito_${currentUserId}_${portfolioType}`;
+  const read = (valueName, fallback) => {
+    const raw = localStorage.getItem(`${keyBase}_${valueName}`);
+    if (raw === null || raw === undefined) return fallback;
+    try { return JSON.parse(raw); } catch (error) { return raw; }
+  };
+
+  return {
+    assets: read('assets', []),
+    budget: read('budget', 0),
+    budgetCurrency: read('budgetCurrency', 'ARS'),
+    rebalanceo: read('rebalanceo', false),
+    goals: read('goals', []),
+    aporteDay: read('aporteDay', 1),
+    aporteState: read('aporteState', { month: '', amounts: {}, confirmed: {} }),
+  };
+}
 
 function setUserStorageScope(userId) {
-  Object.keys(SK).forEach(key => { SK[key] = `habito_${userId}_${key}`; });
+  currentUserId = userId;
+  const savedPortfolio = normalizePortfolioType(localStorage.getItem(getUserStorageKey('activePortfolio')));
+  activePortfolio = savedPortfolio;
+  localStorage.setItem(getUserStorageKey('activePortfolio'), activePortfolio);
+}
+
+function updatePortfolioButtons() {
+  document.querySelectorAll('[data-portfolio-toggle]').forEach(element => {
+    const isActive = element.dataset.portfolioToggle === activePortfolio;
+    element.classList.toggle('active', isActive);
+    element.classList.toggle('inactive', !isActive);
+    element.setAttribute('aria-pressed', String(isActive));
+  });
+}
+
+function switchPortfolio(type) {
+  const next = normalizePortfolioType(type);
+  if (!PORTFOLIO_TYPES.includes(next) || next === activePortfolio) return;
+  persist();
+  activePortfolio = next;
+  localStorage.setItem(getUserStorageKey('activePortfolio'), activePortfolio);
+  loadStorage();
+  updatePortfolioButtons();
+  render();
 }
 
 function currentUserData() {
-  return { assets, rate: usdRate, budget, budgetCurrency, rebalanceo: showRebalanceo, aporteDay, aporteState, balancesVisible, goals, streak: localStorage.getItem(SK.streak), advisorReport };
+  return {
+    activePortfolio,
+    portfolioState: {
+      main: snapshotPortfolioState('main'),
+      retirement: snapshotPortfolioState('retirement'),
+    },
+    rate: usdRate,
+    budget,
+    budgetCurrency,
+    rebalanceo: showRebalanceo,
+    aporteDay,
+    aporteState,
+    assets,
+    goals,
+    streak: localStorage.getItem(getUserStorageKey('streak')),
+    advisorReport,
+  };
 }
 
 function syncUserData() {
@@ -279,50 +364,77 @@ function syncUserData() {
 
 function init() {
   loadStorage();
+  updatePortfolioButtons();
   fetchUSDRate();
   loadStreak();
   render();
 }
 
+function getLegacyPortfolioStorageKey(type, name) {
+  const updatedType = normalizePortfolioType(type);
+  const legacyType = Object.entries(LEGACY_PORTFOLIO_MAP).find(([_, mapped]) => mapped === updatedType)?.[0];
+  return legacyType ? `habito_${currentUserId}_${legacyType}_${name}` : null;
+}
+
+function getAllPortfolioAssets() {
+  if (!currentUserId) return [];
+  const assetsByType = PORTFOLIO_TYPES.flatMap(type => {
+    const storageKey = `habito_${currentUserId}_${type}_assets`;
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) {
+      const legacyKey = getLegacyPortfolioStorageKey(type, 'assets');
+      return legacyKey ? (localStorage.getItem(legacyKey) ? JSON.parse(localStorage.getItem(legacyKey)) : []) : [];
+    }
+    try { return JSON.parse(raw); } catch (error) { return []; }
+  });
+
+  return assetsByType.filter((asset, index, all) => all.findIndex(item => item && item.id === asset.id) === index);
+}
+
 function loadStorage() {
   try {
-    const a = localStorage.getItem(SK.assets);
+    const activeKey = getStorageKey('assets');
+    const legacyKey = getUserStorageKey('assets');
+    const a = localStorage.getItem(activeKey) ?? localStorage.getItem(legacyKey) ?? (() => {
+      const legacyPortfolioKey = getLegacyPortfolioStorageKey(activePortfolio, 'assets');
+      return legacyPortfolioKey ? localStorage.getItem(legacyPortfolioKey) : null;
+    })();
     if (a) assets = JSON.parse(a);
-    const r = localStorage.getItem(SK.rate);
+    const r = localStorage.getItem(getUserStorageKey('rate'));
     if (r) usdRate = parseFloat(r);
-    const b = localStorage.getItem(SK.budget);
-    if (b) {
+    const b = localStorage.getItem(getStorageKey('budget')) ?? localStorage.getItem(legacyKey.replace('assets', 'budget'));
+    if (b !== null && b !== undefined) {
       budget = parseFloat(b);
       document.getElementById('budget-input').value = budget || '';
     }
-    const bc = localStorage.getItem(SK.budgetCurrency);
+    const bc = localStorage.getItem(getStorageKey('budgetCurrency')) ?? localStorage.getItem(legacyKey.replace('assets', 'budgetCurrency'));
     if (bc) { budgetCurrency = bc; applyBudgetCurrencyUI(); }
-    const rb = localStorage.getItem(SK.rebalanceo);
+    const rb = localStorage.getItem(getStorageKey('rebalanceo')) ?? localStorage.getItem(legacyKey.replace('assets', 'rebalanceo'));
     if (rb) { showRebalanceo = rb === 'true'; applyRebalanceoUI(); }
-    const visibility = localStorage.getItem(SK.balancesVisible);
-    if (visibility !== null) balancesVisible = visibility === 'true';
-    applyVisibilityUI();
-    const ad = localStorage.getItem(SK.aporteDay);
+    const ad = localStorage.getItem(getStorageKey('aporteDay')) ?? localStorage.getItem(legacyKey.replace('assets', 'aporteDay'));
     if (ad) {
       aporteDay = parseInt(ad, 10) || 1;
       document.getElementById('aporte-day-input').value = aporteDay;
     }
-    const as = localStorage.getItem(SK.aporteState);
+    const as = localStorage.getItem(getStorageKey('aporteState')) ?? localStorage.getItem(legacyKey.replace('assets', 'aporteState'));
     if (as) { try { aporteState = JSON.parse(as); } catch(e) {} }
+    const g = localStorage.getItem(getStorageKey('goals')) ?? localStorage.getItem(legacyKey.replace('assets', 'goals'));
+    if (g) { try { goals = JSON.parse(g); } catch (error) { goals = []; } }
     checkAporteReset();
   } catch(e) { console.warn('Storage load error', e); }
 }
 
 function persist() {
   try {
-    localStorage.setItem(SK.assets, JSON.stringify(assets));
-    localStorage.setItem(SK.rate, String(usdRate));
-    localStorage.setItem(SK.budget, String(budget));
-    localStorage.setItem(SK.budgetCurrency, budgetCurrency);
-    localStorage.setItem(SK.rebalanceo, String(showRebalanceo));
-    localStorage.setItem(SK.aporteDay, String(aporteDay));
-    localStorage.setItem(SK.aporteState, JSON.stringify(aporteState));
-    localStorage.setItem(SK.balancesVisible, String(balancesVisible));
+    localStorage.setItem(getStorageKey('assets'), JSON.stringify(assets));
+    localStorage.setItem(getUserStorageKey('rate'), String(usdRate));
+    localStorage.setItem(getStorageKey('budget'), String(budget));
+    localStorage.setItem(getStorageKey('budgetCurrency'), budgetCurrency);
+    localStorage.setItem(getStorageKey('rebalanceo'), String(showRebalanceo));
+    localStorage.setItem(getStorageKey('aporteDay'), String(aporteDay));
+    localStorage.setItem(getStorageKey('aporteState'), JSON.stringify(aporteState));
+    localStorage.setItem(getStorageKey('goals'), JSON.stringify(goals));
+    localStorage.setItem(getUserStorageKey('activePortfolio'), activePortfolio);
     syncUserData();
   } catch(e) { console.warn('Storage save error', e); }
 }
@@ -386,7 +498,7 @@ function toggleAporteConfirmed(assetId, checked) {
 
 async function fetchUSDRate() {
   const status = document.getElementById('rate-status');
-  const hasSaved = !!localStorage.getItem(SK.rate);
+  const hasSaved = !!localStorage.getItem(getUserStorageKey('rate'));
   if (!hasSaved) {
     status.textContent = '● cargando';
     status.style.color = 'var(--muted)';
@@ -466,20 +578,14 @@ function totalUSD() { return totalARS() / safeRate(); }
 
 function toggleVisibility() {
   balancesVisible = !balancesVisible;
-  applyVisibilityUI();
-  persist();
-  renderHero();
-  renderAssets();
-}
-
-function applyVisibilityUI() {
   const btn = document.getElementById('visibility-btn');
   const icon = document.getElementById('visibility-icon');
-  btn.setAttribute('aria-pressed', String(balancesVisible));
   icon.innerHTML = balancesVisible
     ? '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"></path><circle cx="12" cy="12" r="3"></circle>'
     : '<path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
   btn.style.opacity = balancesVisible ? '0.7' : '0.5';
+  renderHero();
+  renderAssets();
 }
 
 function render() { renderHero(); renderAssets(); }
@@ -815,7 +921,8 @@ function budgetInARS() {
 
 function updateStreak() {
   try {
-    const raw = localStorage.getItem(SK.streak);
+    const streakKey = getUserStorageKey('streak');
+    const raw = localStorage.getItem(streakKey);
     let s = raw ? JSON.parse(raw) : { count: 0, lastMonth: null };
     const now = new Date();
     const thisMonth = `${now.getFullYear()}-${now.getMonth()}`;
@@ -828,7 +935,7 @@ function updateStreak() {
       }
       s.count = consecutive ? s.count + 1 : 1;
       s.lastMonth = thisMonth;
-      localStorage.setItem(SK.streak, JSON.stringify(s));
+      localStorage.setItem(streakKey, JSON.stringify(s));
       syncUserData();
     }
     document.getElementById('streak-badge').textContent = `🔥 ${s.count} ${s.count === 1 ? 'mes' : 'meses'}`;
@@ -838,7 +945,7 @@ function updateStreak() {
 
 function loadStreak() {
   try {
-    const raw = localStorage.getItem(SK.streak);
+    const raw = localStorage.getItem(getUserStorageKey('streak'));
     const badge = document.getElementById('streak-badge');
     if (raw) {
       const s = JSON.parse(raw);
@@ -852,13 +959,13 @@ function loadStreak() {
 
 function loadGoals() {
   try {
-    const g = localStorage.getItem(SK.goals);
+    const g = localStorage.getItem(getStorageKey('goals')) ?? localStorage.getItem(getUserStorageKey('goals'));
     if (g) goals = JSON.parse(g);
   } catch(e) {}
 }
 
 function persistGoals() {
-  try { localStorage.setItem(SK.goals, JSON.stringify(goals)); syncUserData(); } catch(e) { console.warn('Goals save error', e); }
+  try { localStorage.setItem(getStorageKey('goals'), JSON.stringify(goals)); syncUserData(); } catch(e) { console.warn('Goals save error', e); }
 }
 
 function switchTab(tab) {
@@ -943,8 +1050,9 @@ function renderGoals() {
         etaHtml = `<div class="goal-eta">A este ritmo, alcanzás tu objetivo en <span>${etaStr}</span>.</div>`;
       }
     }
+    const allPortfolioAssets = getAllPortfolioAssets();
     const linkedAssetsData = isLinked
-      ? g.linkedAssetIds.map(id => assets.find(a => a.id === id)).filter(Boolean)
+      ? g.linkedAssetIds.map(id => allPortfolioAssets.find(a => a.id === id)).filter(Boolean)
       : [];
     const linkedRow = linkedAssetsData.length
       ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;align-items:center;">
@@ -1012,14 +1120,15 @@ function openGoalModal(id) {
 function renderAssetPicker() {
   const wrap  = document.getElementById('g-assets-picker');
   const empty = document.getElementById('g-assets-empty');
-  if (!assets.length) {
+  const allAssets = getAllPortfolioAssets();
+  if (!allAssets.length) {
     wrap.innerHTML = '';
     empty.style.display = 'block';
     return;
   }
   empty.style.display = 'none';
   const chipClassMap = { Crypto:'chip-crypto', Stock:'chip-stock', ETF:'chip-etf', FCI:'chip-fci', Bond:'chip-bond', Cash:'chip-cash', Other:'chip-other' };
-  wrap.innerHTML = assets.map(a => {
+  wrap.innerHTML = allAssets.map(a => {
     const selected = goalLinkedAssetIds.includes(a.id);
     const chipCls = chipClassMap[a.type] || 'chip-other';
     return `
@@ -1055,7 +1164,7 @@ function applyGoalCurrentLockUI() {
 }
 
 function sumLinkedAssets(assetIds, targetCurrency) {
-  const linked = assets.filter(a => assetIds.includes(a.id));
+  const linked = getAllPortfolioAssets().filter(a => assetIds.includes(a.id));
   const totalARSVal = linked.reduce((s, a) => s + toARSval(a), 0);
   return targetCurrency === 'USD' ? totalARSVal / safeRate() : totalARSVal;
 }
@@ -1753,9 +1862,27 @@ window.habitoStartDashboard = async user => {
   const saved = await window.HabitoData.load(user.id);
   if (saved) {
     advisorReport = saved.advisorReport || null;
+    const portfolioState = saved.portfolioState || {};
+    const normalizedActivePortfolio = normalizePortfolioType(saved.activePortfolio);
+    if (PORTFOLIO_TYPES.includes(normalizedActivePortfolio)) {
+      activePortfolio = normalizedActivePortfolio;
+      localStorage.setItem(getUserStorageKey('activePortfolio'), activePortfolio);
+    }
+    PORTFOLIO_TYPES.forEach(type => {
+      const legacyType = Object.entries(LEGACY_PORTFOLIO_MAP).find(([_, mapped]) => mapped === type)?.[0];
+      const state = portfolioState[type] || portfolioState[legacyType] || {};
+      const bucket = `habito_${user.id}_${type}`;
+      ['assets', 'budget', 'budgetCurrency', 'rebalanceo', 'goals', 'aporteDay', 'aporteState'].forEach(key => {
+        const value = state[key];
+        if (value !== undefined && value !== null) {
+          localStorage.setItem(`${bucket}_${key}`, typeof value === 'string' ? value : JSON.stringify(value));
+        }
+      });
+    });
     Object.entries(saved).forEach(([key, value]) => {
-      if (Object.hasOwn(SK, key) && value !== null && value !== undefined) {
-        localStorage.setItem(SK[key], typeof value === 'string' ? value : JSON.stringify(value));
+      if (key === 'portfolioState' || key === 'activePortfolio') return;
+      if (['assets','budget','budgetCurrency','rebalanceo','goals','aporteDay','aporteState','rate','streak'].includes(key) && value !== null && value !== undefined) {
+        localStorage.setItem(getUserStorageKey(key === 'rate' ? 'rate' : key), typeof value === 'string' ? value : JSON.stringify(value));
       }
     });
   }
