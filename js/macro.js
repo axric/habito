@@ -117,7 +117,7 @@ async function loadMacroData() {
   return data;
 }
 
-async function refreshMacroData() {
+async function refreshMacroData(payload = {}) {
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
   if (sessionError) throw sessionError;
   const token = sessionData?.session?.access_token;
@@ -129,12 +129,12 @@ async function refreshMacroData() {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({}),
+    body: JSON.stringify(payload || {}),
   });
 
-  const payload = await response.json().catch(() => ({}));
+  const payloadJson = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(payload.error || 'No se pudo actualizar el macro data.');
+    throw new Error(payloadJson.error || 'No se pudo actualizar el macro data.');
   }
 
   return loadMacroData();

@@ -99,17 +99,51 @@ async function fetchFredSeries(seriesId) {
   return { value, change };
 }
 
+function normalizeStockSymbol(value) {
+  return String(value || '')
+    .replace(/\s*\([^)]*\)/g, '')
+    .replace(/[^A-Za-z0-9\-\.\^]/g, '')
+    .toUpperCase();
+}
+
 async function fetchYahooTicker(symbol) {
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=1mo&interval=1d`;
-  const data = await fetchJson(url);
-  const result = Array.isArray(data?.chart?.result) ? data.chart.result[0] : null;
-  const meta = result?.meta || {};
-  const quote = result?.indicators?.quote?.[0];
-  const closes = Array.isArray(quote?.close) ? quote.close.filter(value => Number.isFinite(Number(value))) : [];
-  const price = toNumber(meta?.regularMarketPrice ?? closes[closes.length - 1]);
-  const previousClose = toNumber(closes?.[closes.length - 2] ?? meta?.previousClose);
-  const change = percentChange(price, previousClose);
-  return { value: price, change };
+  const normalized = normalizeStockSymbol(symbol);
+  if (!normalized) return null;
+  try {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(normalized)}?range=1mo&interval=1d`;
+    const data = await fetchJson(url);
+    const result = Array.isArray(data?.chart?.result) ? data.chart.result[0] : null;
+    const meta = result?.meta || {};
+    const quote = result?.indicators?.quote?.[0];
+    const closes = Array.isArray(quote?.close) ? quote.close.filter(value => Number.isFinite(Number(value))) : [];
+    const price = toNumber(meta?.regularMarketPrice ?? closes[closes.length - 1]);
+    const previousClose = toNumber(closes?.[closes.length - 2] ?? meta?.previousClose);
+    const change = percentChange(price, previousClose);
+    return { value: price, change };
+  } catch (error) {
+    console.warn('Yahoo ticker fetch failed for', symbol, error.message);
+    return null;
+  }
+}
+
+function buildStockRows(symbols = []) {
+  const uniqueSymbols = [...new Set(symbols
+    .map(normalizeStockSymbol)
+    .filter(Boolean))];
+
+  return Promise.all(uniqueSymbols.map(async (symbol) => {
+    const quote = await fetchYahooTicker(symbol);
+    if (!quote || !Number.isFinite(quote.value)) return null;
+    const change = Number.isFinite(quote.change) ? quote.change : null;
+    return {
+      key: `stock_${symbol}` ,
+      label: symbol,
+      value: String(quote.value),
+      change: change === null ? null : `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`,
+      context: 'Fuente: Yahoo Finance',
+      updated_at: new Date().toISOString(),
+    };
+  }));
 }
 
 function mapRows(raw) {
@@ -207,6 +241,8 @@ module.exports = async function handler(request, response) {
       return;
     }
 
+    const body = request.body || {};
+    const requestedSymbols = Array.isArray(body.symbols) ? body.symbols : [];
     const [dolarOficial, dolarMep, dolarBlue, inflacion, inflacionInteranual, inflacionEsperada, riesgoPais, uva, ust1y, ust5y, ust10y, brent, wti, bitcoin] = await Promise.all([
       fetchDolarRate('oficial'),
       fetchDolarRate('mep'),
@@ -247,12 +283,18 @@ module.exports = async function handler(request, response) {
       bitcoinChange: bitcoin?.change,
     });
 
-    const written = await upsertMacroRows(rows);
+    const stockRows = await buildStockRows(requestedSymbols);
+    const mergedRows = [
+      ...rows,
+      ...stockRows.filter(Boolean),
+    ];
+
+    const written = await upsertMacroRows(mergedRows);
 
     response.setHeader('Cache-Control', 'no-store');
     response.status(200).json({
       ok: true,
-      updated: rows.length,
+      updated: mergedRows.length,
       records: written,
       timestamp: new Date().toISOString(),
     });
