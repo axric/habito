@@ -9,6 +9,8 @@ This list tracks approved or active work.
 - [ ] Document the actual endpoints used by API calls
 - [ ] Validate the Vercel + Supabase production flow end to end, including auth, persistence, advisor, and macro refresh
 
+
+
 ## Pending
 - [ ] Review onboarding copy for main vs retirement bucket setup
 - [ ] Improve recovery UX for reset-password and account editing flows
@@ -17,6 +19,12 @@ This list tracks approved or active work.
 - [ ] Add automated smoke tests for login, portfolio persistence, advisor responses, and indicator fallback behavior
 - [ ] Update or archive the legacy local-only product specification so it matches the Supabase/Vercel architecture
 - [ ] Complete production security hardening before public launch
+- [ ] Promote current branch to main. 
+- [ ] Create a demo branch. Dummy data. 
+- [ ] Close privacy of current repo.
+- [ ] Improve privacy and security and write a secury stanza document for new users. 
+- [ ] asses monetizing strategy. create a folder for tha topic. 
+
 
 ## Performance ideas
 - [ ] Debounce and coalesce Supabase state saves so rapid UI changes produce one write instead of a queue of snapshots
