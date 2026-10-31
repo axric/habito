@@ -52,7 +52,8 @@ async function fetchJson(url, init = {}) {
 }
 
 async function fetchDolarRate(type) {
-  const url = `https://dolarapi.com/v1/dolares/${type}`;
+  const normalizedType = type === 'mep' ? 'bolsa' : type;
+  const url = `https://dolarapi.com/v1/dolares/${normalizedType}`;
   const data = await fetchJson(url);
   const value = toNumber(data?.venta ?? data?.compra ?? data?.price ?? data?.value);
   return Number.isFinite(value) ? value : null;
@@ -162,7 +163,7 @@ function mapRows(raw) {
   };
 
   pushRow('dolar_oficial', 'Dólar Oficial BNA', raw.dolarOficial, null, 'Fuente: dolarapi.com');
-  pushRow('dolar_mep', 'Dólar MEP', raw.dolarMep, null, 'Fuente: dolarapi.com');
+  pushRow('dolar_mep', 'Dólar MEP (Bolsa)', raw.dolarMep, null, 'Fuente: dolarapi.com');
   pushRow('dolar_blue', 'Dólar Blue', raw.dolarBlue, null, 'Fuente: dolarapi.com');
   pushRow('riesgo_pais', 'Riesgo País EMBI+', raw.riesgoPais, null, 'Fuente: argentinadatos.com');
   pushRow('inflacion_ipc', 'IPC — INDEC', raw.inflacionIpc, null, 'Fuente: argentinadatos.com');

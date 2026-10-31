@@ -24,11 +24,11 @@ create table if not exists macro_data (
 
 -- Seed macro_data with known indicators
 insert into macro_data (key, label, value, change, context) values
-  ('dolar_oficial',        'Dólar Oficial BNA',   '1410',   '-0,35%',  null),
-  ('dolar_mep',            'Dólar MEP',           '1474',   '+2,71%',  null),
-  ('dolar_blue',           'Dólar Blue',          '1400',   '-1,06%',  null),
-  ('dolar_ccl',            'Dólar CCL',           '1503',   '+1,01%',  null),
-  ('riesgo_pais',          'Riesgo País EMBI+',   '582',    '+4,5%',   null),
+  ('dolar_oficial',        'Dólar Oficial BNA',   '1560',   null,      null),
+  ('dolar_mep',            'Dólar MEP (Bolsa)',   '1575',   null,      null),
+  ('dolar_blue',           'Dólar Blue',          '1565',   null,      null),
+  ('dolar_ccl',            'Dólar CCL',           '1658',   null,      null),
+  ('riesgo_pais',          'Riesgo País EMBI+',   '582',    null,      null),
   ('inflacion_ipc',        'IPC — INDEC',         '3.4',    '-',       null),
   ('inflacion_interanual',  'Inflación Interanual', '32.5',   '-',       null),
   ('inflacion_esperada',   'Inflación Esperada',   '34.0',   '-',       null),

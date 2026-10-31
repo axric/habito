@@ -180,7 +180,7 @@ export function formatMacroForDashboard(macroMap) {
     },
     {
       key:         MACRO_KEYS.DOLAR_MEP,
-      label:       macroMap[MACRO_KEYS.DOLAR_MEP]?.label  ?? 'Dólar MEP',
+      label:       macroMap[MACRO_KEYS.DOLAR_MEP]?.label  ?? 'Dólar MEP (Bolsa)',
       value:       `$${Number(macroMap[MACRO_KEYS.DOLAR_MEP]?.value ?? 0).toLocaleString('es-AR')}`,
       change:      macroMap[MACRO_KEYS.DOLAR_MEP]?.change ?? '—',
       changeColor: colorFor(macroMap[MACRO_KEYS.DOLAR_MEP]?.change),
