@@ -134,7 +134,7 @@ async function refreshMacroData(payload = {}) {
 
   const payloadJson = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(payloadJson.error || 'No se pudo actualizar el macro data.');
+    throw new Error(payloadJson.details || payloadJson.error || 'No se pudo actualizar el macro data.');
   }
 
   return loadMacroData();

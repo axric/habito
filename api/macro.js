@@ -36,7 +36,11 @@ function percentChange(current, previous) {
 
 async function fetchJson(url, init = {}) {
   const response = await fetch(url, {
-    headers: { Accept: 'application/json', ...(init.headers || {}) },
+    headers: {
+      Accept: 'application/json, text/plain, */*',
+      'User-Agent': 'Mozilla/5.0 (compatible; Habito/1.0; +https://habito.app)',
+      ...(init.headers || {}),
+    },
     ...init,
   });
   const text = await response.text();
@@ -70,8 +74,20 @@ async function fetchArgentinaInflacionInteranual() {
 }
 
 async function fetchArgentinaInflacionEsperada() {
-  const data = await fetchJson('https://api.argentinadatos.com/v1/finanzas/rem');
-  return readLastValue(data);
+  const data = await fetchJson('https://api.argentinadatos.com/v1/finanzas/rem/ultimo');
+  if (!Array.isArray(data)) return null;
+
+  const candidate = data.find((item) => {
+    const indicator = String(item?.indicador || '').toLowerCase();
+    const period = String(item?.periodo || '').toLowerCase();
+    const hasInflationText = indicator.includes('infl') || indicator.includes('ipc');
+    const hasExpectedWindow = period.includes('prox. 12 meses') || period.includes('próx. 12 meses');
+    return hasInflationText && hasExpectedWindow;
+  });
+
+  const value = candidate?.mediana ?? candidate?.promedio ?? null;
+  if (value === null || value === undefined) return null;
+  return Number(value);
 }
 
 async function fetchArgentinaRiskPais() {

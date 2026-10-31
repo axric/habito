@@ -1098,7 +1098,12 @@ function switchTab(tab) {
   } else if (tab === 'indicators') {
     indicatorsTab.style.display = 'block';
     fab.style.display = 'none';
-    renderIndicators();
+    const needsRefresh = !window.habitoMacroData || Object.keys(window.habitoMacroData || {}).length === 0 || Date.now() - getMacroRefreshStamp() > 1000 * 60 * 60 * 24;
+    if (needsRefresh) {
+      refreshMacroIndicators().catch(() => {});
+    } else {
+      renderIndicators();
+    }
   } else if (tab === 'goals') {
     goalsTab.style.display = 'block';
     fab.style.display = 'flex';
