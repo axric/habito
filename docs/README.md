@@ -16,6 +16,15 @@ This folder holds the current project context and working references for Habito.
 - Portfolio model: two default user buckets — Main and 2050
 - Goals can link assets across both portfolios
 
+## API calls at a glance
+The app keeps its API usage intentionally small and straightforward:
+- `/api/advisor` — sends the user’s current portfolio summary to the AI service and returns structured guidance
+- `dolarapi.com` — fetches the latest USD rate used in the dashboard calculations and conversions
+- Supabase queries — read/write user and portfolio state such as `user_data`, asset records, and objective data
+- Macro/market sources (for example ArgentinaDatos or BYMA) — can be used later for the indicators tab to provide inflation, risk country, and market snapshots
+
+In short: the browser handles the UI, Supabase stores the app data, and a few external APIs provide market and AI context.
+
 ## Naming convention
 The app currently uses two portfolio buckets:
 - Main: default investing bucket for ongoing portfolio management

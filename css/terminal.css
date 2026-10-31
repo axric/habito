@@ -156,6 +156,23 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
 .goal-meta{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:6px;}
 .goal-eta{font-size:10px;color:var(--muted);font-style:italic;margin-top:4px;padding-top:6px;border-top:1px solid var(--selection);}
 .goal-eta span{color:var(--purple);font-style:normal;font-weight:700;}
+.macro-section{margin-bottom:14px;}
+.macro-section-title{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin:0 0 8px;}
+.macro-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+.macro-grid-compact{grid-template-columns:repeat(3,minmax(0,1fr));}
+.macro-card{background:var(--bg-dark);border:1px solid var(--selection);border-radius:var(--r-md);padding:10px 10px 9px;min-height:96px;display:flex;flex-direction:column;justify-content:space-between;}
+.macro-header{display:flex;justify-content:space-between;align-items:flex-start;gap:6px;}
+.macro-label{font-size:9px;line-height:1.4;color:var(--muted);font-weight:600;}
+.macro-change{font-size:8px;font-weight:700;border-radius:999px;padding:2px 5px;white-space:nowrap;}
+.macro-change.pos{background:rgba(80,250,123,0.12);color:var(--green);}
+.macro-change.neg{background:rgba(255,85,85,0.12);color:var(--red);}
+.macro-change.neu{background:rgba(98,114,164,0.12);color:var(--muted);}
+.macro-value{font-size:16px;font-weight:700;line-height:1.2;color:var(--fg);margin-top:10px;word-break:break-word;}
+.macro-sub{font-size:8px;color:var(--muted);margin-top:4px;}
+.macro-updated{font-size:9px;color:var(--muted);margin:-4px 0 10px;}
+.macro-empty{background:var(--bg-dark);border:1px solid var(--selection);border-radius:var(--r-md);padding:14px;color:var(--muted);font-size:10px;line-height:1.6;}
+.macro-refresh-btn{background:none;border:1px solid var(--purple);border-radius:999px;color:var(--purple);padding:4px 8px;font-size:9px;font-weight:700;cursor:pointer;}
+.macro-refresh-btn:disabled{opacity:.5;cursor:wait;}
 /* GOAL ASSET PICKER — reuses portfolio badge color scheme */
 .asset-chip{display:flex;align-items:center;gap:3px;padding:2px 7px;border-radius:var(--r-full);font-size:8px;font-weight:600;cursor:pointer;border:1px solid var(--selection);background:var(--bg-darker);color:var(--muted);transition:all .15s;}
 .asset-chip.selected.chip-crypto{background:rgba(189,147,249,0.15);color:var(--purple);border-color:var(--purple);}

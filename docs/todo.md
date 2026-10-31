@@ -12,6 +12,8 @@ This list tracks approved or active work.
 - [ ] Review onboarding copy for main vs retirement bucket setup
 - [ ] Improve recovery UX for reset-password and account editing flows
 - [ ] Consider portfolio export and backup support
+- [ ] Small dashboard with macro_data
+- [ ] Move static site to a branch and dynamic to main.
 
 ## Completed
 - [x] Added two portfolio buckets: Main and 2050

@@ -113,7 +113,36 @@ async function loadMacroData() {
   return data;
 }
 
-window.HabitoMacro = { load: loadMacroData };
+async function refreshMacroData() {
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError) throw sessionError;
+  const token = sessionData?.session?.access_token;
+  if (!token) throw new Error('Debés iniciar sesión para actualizar indicadores.');
+
+  const response = await fetch('/api/macro', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({}),
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload.error || 'No se pudo actualizar el macro data.');
+  }
+
+  return loadMacroData();
+}
+
+window.HabitoMacro = Object.assign(window.HabitoMacro || {}, {
+  load: loadMacroData,
+  refresh: refreshMacroData,
+  MACRO_KEYS,
+  formatMacroForDashboard,
+  formatTreasuries,
+});
 
 
 // ------------------------------------------------------------

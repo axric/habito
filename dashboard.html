@@ -73,6 +73,14 @@
     </div>
     <div id="assets-list"></div>
   </div>
+  <div id="tab-indicators" class="scroll-area" style="display:none;padding-bottom:140px;">
+    <div class="section-label">
+      <span>INDICADORES</span>
+      <button class="macro-refresh-btn" onclick="refreshMacroIndicators()" type="button">Actualizar</button>
+    </div>
+    <div id="macro-updated" class="macro-updated">Sin datos</div>
+    <div id="macro-sections"></div>
+  </div>
   <div id="tab-goals" class="scroll-area" style="display:none;padding-bottom:140px;">
     <div class="section-label"><span>OBJETIVOS</span></div>
     <div id="goals-list"></div>
@@ -104,6 +112,10 @@
       <span class="nav-icon">💼</span>
       <span class="nav-label">Portafolio</span>
       <div class="nav-indicator"></div>
+    </div>
+    <div class="nav-item inactive" id="nav-indicators" onclick="switchTab('indicators')">
+      <span class="nav-icon">📊</span>
+      <span class="nav-label">Indicadores</span>
     </div>
     <div class="nav-item inactive" id="nav-goals" onclick="switchTab('goals')">
       <span class="nav-icon">🎯</span>
@@ -1055,16 +1067,22 @@ function persistGoals() {
 function switchTab(tab) {
   currentTab = tab;
   const portfolio = document.querySelector('.scroll-area');
+  const indicatorsTab = document.getElementById('tab-indicators');
   const goalsTab  = document.getElementById('tab-goals');
   const aiTab     = document.getElementById('tab-ai');
   const fab       = document.getElementById('fab-btn');
   portfolio.style.display = 'none';
+  indicatorsTab.style.display = 'none';
   goalsTab.style.display  = 'none';
   aiTab.style.display     = 'none';
   if (tab === 'portfolio') {
     portfolio.style.display = 'block';
     fab.style.display = 'flex';
     fab.title = 'Agregar activo';
+  } else if (tab === 'indicators') {
+    indicatorsTab.style.display = 'block';
+    fab.style.display = 'none';
+    renderIndicators();
   } else if (tab === 'goals') {
     goalsTab.style.display = 'block';
     fab.style.display = 'flex';
@@ -1074,7 +1092,7 @@ function switchTab(tab) {
     aiTab.style.display = 'block';
     fab.style.display = 'none';
   }
-  ['portfolio','goals','ai'].forEach(t => {
+  ['portfolio','indicators','goals','ai'].forEach(t => {
     const el = document.getElementById('nav-' + t);
     if (!el) return;
     el.className = 'nav-item ' + (t === tab ? 'active' : 'inactive');
@@ -1087,6 +1105,153 @@ function switchTab(tab) {
       ind.remove();
     }
   });
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function getMacroRefreshStamp() {
+  try {
+    const raw = localStorage.getItem(getUserStorageKey('macroLastUpdated'));
+    const value = raw ? Number(raw) : 0;
+    return Number.isFinite(value) ? value : 0;
+  } catch (error) {
+    return 0;
+  }
+}
+
+function setMacroRefreshStamp(value = Date.now()) {
+  try {
+    localStorage.setItem(getUserStorageKey('macroLastUpdated'), String(value));
+  } catch (error) {
+    console.warn('Unable to persist macro refresh stamp.', error);
+  }
+}
+
+async function renderIndicators() {
+  const mount = document.getElementById('macro-sections');
+  const updatedEl = document.getElementById('macro-updated');
+  if (!mount) return;
+
+  try {
+    const ready = window.habitoMacroData || (window.HabitoMacro ? await window.HabitoMacro.load() : null);
+    if (!ready) {
+      mount.innerHTML = '<div class="macro-empty">No hay indicadores disponibles todavía.</div>';
+      if (updatedEl) updatedEl.textContent = 'Sin datos';
+      return;
+    }
+    window.habitoMacroData = ready;
+    const latestUpdated = Object.values(ready).reduce((latest, row) => {
+      if (!row || !row.updated_at) return latest;
+      const current = new Date(row.updated_at).getTime();
+      return Number.isFinite(current) && current > latest ? current : latest;
+    }, 0);
+    const refreshStamp = getMacroRefreshStamp();
+    const stale = refreshStamp > 0 && Date.now() - refreshStamp > 1000 * 60 * 60 * 24 * 7;
+    if (updatedEl) {
+      const readout = latestUpdated
+        ? `Actualizado: ${new Date(latestUpdated).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })}`
+        : 'Sin datos';
+      updatedEl.textContent = stale ? `${readout} · recomienda actualizar` : readout;
+    }
+
+    const cards = window.HabitoMacro.formatMacroForDashboard(ready);
+    const keys = window.HabitoMacro.MACRO_KEYS || {};
+    const myStocks = (assets || [])
+      .filter(asset => (asset.type === 'Stock' || asset.type === 'ETF') && Number(asset.balance || 0) > 0)
+      .map(asset => {
+        const assetValue = toARSval(asset);
+        const pctOfTotal = totalARS() > 0 ? (assetValue / totalARS()) * 100 : 0;
+        return {
+          key: asset.id || asset.name,
+          label: asset.name,
+          value: asset.currency === 'USD' ? `u$s ${fmtNum(asset.balance, 2)}` : `$ ${fmtNum(asset.balance, 2)}`,
+          change: `${fmtNum(pctOfTotal, 1)}% del total`,
+          changeColor: 'neu',
+          sub: `${asset.type} · ${asset.currency}`,
+        };
+      });
+
+    const sections = [{
+      title: 'Argentina',
+      items: cards.filter(card => [keys.DOLAR_OFICIAL, keys.DOLAR_MEP, keys.DOLAR_BLUE, keys.RIESGO_PAIS, keys.INFLACION_IPC].includes(card.key)),
+    }, {
+      title: 'Internacional',
+      items: cards.filter(card => [keys.BRENT, keys.SP500, keys.BITCOIN].includes(card.key)),
+    }, {
+      title: 'Bonos del Tesoro',
+      items: window.HabitoMacro.formatTreasuries(ready),
+      compact: true,
+    }];
+
+    if (myStocks.length) {
+      sections.unshift({
+        title: 'Mis acciones',
+        items: myStocks,
+        compact: true,
+      });
+    }
+
+    mount.innerHTML = sections.map(section => {
+      const markup = section.items.map(item => {
+        const changeClass = item.changeColor === 'pos' ? 'macro-change pos' : item.changeColor === 'neg' ? 'macro-change neg' : 'macro-change neu';
+        const changeHtml = item.change && item.change !== '—' ? `<span class="${changeClass}">${escapeHtml(item.change)}</span>` : '<span class="macro-change neu">—</span>';
+        return `
+          <div class="macro-card">
+            <div class="macro-header">
+              <span class="macro-label">${escapeHtml(item.label)}</span>
+              ${changeHtml}
+            </div>
+            <div class="macro-value">${escapeHtml(item.value)}</div>
+            ${item.sub ? `<div class="macro-sub">${escapeHtml(item.sub)}</div>` : ''}
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="macro-section">
+          <div class="macro-section-title">${escapeHtml(section.title)}</div>
+          <div class="macro-grid ${section.compact ? 'macro-grid-compact' : ''}">${markup}</div>
+        </div>
+      `;
+    }).join('');
+  } catch (error) {
+    console.error('Unable to render macro indicators.', error);
+    mount.innerHTML = '<div class="macro-empty">No se pudieron cargar los indicadores.</div>';
+    if (updatedEl) updatedEl.textContent = 'Error al cargar';
+  }
+}
+
+async function refreshMacroIndicators() {
+  const refreshBtn = document.querySelector('.macro-refresh-btn');
+  if (refreshBtn) {
+    refreshBtn.disabled = true;
+    refreshBtn.textContent = 'Actualizando...';
+  }
+
+  try {
+    if (!window.HabitoMacro || !window.HabitoMacro.refresh) {
+      throw new Error('No existe la capa de datos macro.');
+    }
+    await window.HabitoMacro.refresh();
+    setMacroRefreshStamp(Date.now());
+    await renderIndicators();
+    showToast('Indicadores actualizados.');
+  } catch (error) {
+    console.error('Macro refresh failed.', error);
+    showToast(error.message || 'No se pudieron actualizar los indicadores.');
+  } finally {
+    if (refreshBtn) {
+      refreshBtn.disabled = false;
+      refreshBtn.textContent = 'Actualizar';
+    }
+  }
 }
 
 function onFabClick() {
@@ -1984,7 +2149,10 @@ window.habitoStartDashboard = async user => {
     document.getElementById('ai-restart').style.display = 'block';
   }
   if (!saved) syncUserData();
-  window.HabitoMacro.load().then(data => { window.habitoMacroData = data; }).catch(error => {
+  window.HabitoMacro.load().then(data => {
+    window.habitoMacroData = data;
+    if (currentTab === 'indicators') renderIndicators();
+  }).catch(error => {
     console.error('Unable to load shared macro data.', error);
     showToast('No se pudieron cargar los datos macro.');
   });
