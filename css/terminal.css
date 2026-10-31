@@ -158,6 +158,9 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'Poppins'
 .goal-eta span{color:var(--purple);font-style:normal;font-weight:700;}
 .macro-section{margin-bottom:14px;}
 .macro-section-title{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin:0 0 8px;}
+.macro-section-title.pos{color:var(--green);}
+.macro-section-title.neg{color:var(--red);}
+.macro-section-title.neu{color:var(--muted);}
 .macro-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
 .macro-grid-compact{grid-template-columns:repeat(3,minmax(0,1fr));}
 .macro-card{background:var(--bg-dark);border:1px solid var(--selection);border-radius:var(--r-md);padding:10px 10px 9px;min-height:96px;display:flex;flex-direction:column;justify-content:space-between;}

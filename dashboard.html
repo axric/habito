@@ -83,6 +83,7 @@
   </div>
   <div id="tab-goals" class="scroll-area" style="display:none;padding-bottom:140px;">
     <div class="section-label"><span>OBJETIVOS</span></div>
+    <div class="portfolio-switch" id="goals-portfolio-picker" aria-label="Seleccionar cartera"></div>
     <div id="goals-list"></div>
     <div id="goals-empty" class="empty-state" style="display:none;">
       <p>Sin objetivos.</p>
@@ -90,6 +91,7 @@
     </div>
   </div>
   <div id="tab-ai" class="scroll-area" style="display:none;padding-bottom:140px;">
+    <div class="portfolio-switch" id="ai-portfolio-picker" aria-label="Seleccionar cartera" style="margin-bottom:12px;"></div>
     <div id="ai-idle">
       <div style="text-align:center;padding:24px 16px 20px;">
         <div style="font-size:32px;margin-bottom:10px;">🤖</div>
@@ -399,8 +401,7 @@ function updatePortfolioButtons() {
     }).join('');
   }
 
-  const switcher = document.querySelector('.portfolio-switch');
-  if (switcher) {
+  document.querySelectorAll('.portfolio-switch').forEach(switcher => {
     switcher.innerHTML = types.map(type => {
       const isActive = type === activePortfolio;
       return `
@@ -413,7 +414,7 @@ function updatePortfolioButtons() {
         >${getPortfolioLabel(type)}</button>
       `;
     }).join('');
-  }
+  });
 }
 
 function switchPortfolio(type) {
@@ -425,6 +426,13 @@ function switchPortfolio(type) {
   loadStorage();
   updatePortfolioButtons();
   render();
+  if (currentTab === 'goals') renderGoals();
+  if (currentTab === 'ai') {
+    const aiSession = document.getElementById('ai-session');
+    if (aiSession && aiSession.style.display !== 'none') {
+      startAdvisor();
+    }
+  }
 }
 
 function currentUserData() {
@@ -1120,6 +1128,24 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+function getMacroSectionTitleClass(items) {
+  const signals = (items || []).map(item => {
+    if (!item || typeof item.change !== 'string') return null;
+    const value = item.change.trim();
+    if (!value || value === '—') return null;
+    if (value.startsWith('+')) return 'pos';
+    if (value.startsWith('-')) return 'neg';
+    return 'neu';
+  }).filter(Boolean);
+
+  if (!signals.length) return 'neu';
+  const hasPos = signals.includes('pos');
+  const hasNeg = signals.includes('neg');
+  if (hasPos && !hasNeg) return 'pos';
+  if (hasNeg && !hasPos) return 'neg';
+  return 'neu';
+}
+
 function getMacroRefreshStamp() {
   try {
     const raw = localStorage.getItem(getUserStorageKey('macroLastUpdated'));
@@ -1135,6 +1161,36 @@ function setMacroRefreshStamp(value = Date.now()) {
     localStorage.setItem(getUserStorageKey('macroLastUpdated'), String(value));
   } catch (error) {
     console.warn('Unable to persist macro refresh stamp.', error);
+  }
+}
+
+async function fetchQuoteFromYahoo(symbol) {
+  const query = String(symbol || '').trim();
+  if (!query) return null;
+
+  const normalized = query
+    .replace(/\s*\([^)]*\)/g, '')
+    .replace(/[^A-Za-z0-9\-\.\^]/g, '')
+    .toUpperCase();
+  if (!normalized) return null;
+
+  try {
+    const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(normalized)}?range=1mo&interval=1d`);
+    if (!response.ok) return null;
+    const payload = await response.json();
+    const result = Array.isArray(payload?.chart?.result) ? payload.chart.result[0] : null;
+    if (!result) return null;
+    const meta = result?.meta || {};
+    const quote = result?.indicators?.quote?.[0];
+    const closes = Array.isArray(quote?.close) ? quote.close.filter(value => Number.isFinite(Number(value))) : [];
+    const value = Number(meta?.regularMarketPrice ?? closes[closes.length - 1]);
+    const previousClose = Number(closes[closes.length - 2] ?? meta?.previousClose ?? value);
+    if (!Number.isFinite(value)) return null;
+    const change = previousClose && previousClose !== 0 ? ((value - previousClose) / previousClose) * 100 : 0;
+    return { value, change };
+  } catch (error) {
+    console.warn('Unable to fetch quote for', symbol, error);
+    return null;
   }
 }
 
@@ -1167,21 +1223,23 @@ async function renderIndicators() {
 
     const cards = window.HabitoMacro.formatMacroForDashboard(ready);
     const keys = window.HabitoMacro.MACRO_KEYS || {};
-    const myStocks = (assets || [])
-      .filter(asset => (asset.type === 'Stock' || asset.type === 'ETF') && Number(asset.balance || 0) > 0)
-      .map(asset => {
-        const primaryValue = asset.currency === 'USD'
-          ? `u$s ${fmtNum(asset.balance, 2)}`
-          : `$ ${fmtNum(asset.balance, 0)}`;
-        return {
-          key: asset.id || asset.name,
-          label: asset.name,
-          value: primaryValue,
-          change: '—',
-          changeColor: 'neu',
-          sub: `${asset.type} · ${asset.currency}`,
-        };
-      });
+    const stockAssets = (assets || []).filter(asset => (asset.type === 'Stock' || asset.type === 'ETF') && Number(asset.balance || 0) > 0);
+    const myStocks = await Promise.all(stockAssets.map(async asset => {
+      const quote = await fetchQuoteFromYahoo(asset.name || asset.ticker || asset.symbol || '');
+      const price = quote?.value ?? null;
+      const change = quote?.change ?? null;
+      const priceText = price == null ? '—' : `${asset.currency === 'USD' ? 'u$s' : '$'} ${fmtNum(price, 2)}`;
+      const changeText = change == null ? '—' : `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
+
+      return {
+        key: asset.id || asset.name,
+        label: asset.name,
+        value: priceText,
+        change: changeText,
+        changeColor: change == null ? 'neu' : (change >= 0 ? 'pos' : 'neg'),
+        sub: `${asset.type} · precio actual`,
+      };
+    }));
 
     const sections = [{
       title: 'Argentina',
@@ -1190,7 +1248,7 @@ async function renderIndicators() {
       title: 'Internacional',
       items: cards.filter(card => [keys.BRENT, keys.SP500, keys.BITCOIN].includes(card.key)),
     }, {
-      title: 'Bonos del Tesoro',
+      title: 'Bonos del Tesoro de EEUU',
       items: window.HabitoMacro.formatTreasuries(ready),
       compact: true,
     }];
@@ -1204,6 +1262,7 @@ async function renderIndicators() {
     }
 
     mount.innerHTML = sections.map(section => {
+      const titleClass = getMacroSectionTitleClass(section.items);
       const markup = section.items.map(item => {
         const changeClass = item.changeColor === 'pos' ? 'macro-change pos' : item.changeColor === 'neg' ? 'macro-change neg' : 'macro-change neu';
         const changeHtml = item.change && item.change !== '—' ? `<span class="${changeClass}">${escapeHtml(item.change)}</span>` : '<span class="macro-change neu">—</span>';
@@ -1221,7 +1280,7 @@ async function renderIndicators() {
 
       return `
         <div class="macro-section">
-          <div class="macro-section-title">${escapeHtml(section.title)}</div>
+          <div class="macro-section-title ${titleClass}">${escapeHtml(section.title)}</div>
           <div class="macro-grid ${section.compact ? 'macro-grid-compact' : ''}">${markup}</div>
         </div>
       `;
