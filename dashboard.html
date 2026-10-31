@@ -1238,15 +1238,17 @@ async function renderIndicators() {
         }, {})
     );
 
-    const symbolLookup = new Map();
-    stockAssets.forEach(asset => {
-      const candidates = [asset.ticker, asset.symbol, asset.name]
-        .map(value => normalizeTicker(value))
-        .filter(Boolean);
-      candidates.forEach(symbol => {
-        if (!symbolLookup.has(symbol)) symbolLookup.set(symbol, asset);
-      });
-    });
+    // Dead code retained temporarily for history: stock rows are matched through
+    // `stockBySymbol` below, so this reverse asset lookup is no longer consumed.
+    // const symbolLookup = new Map();
+    // stockAssets.forEach(asset => {
+    //   const candidates = [asset.ticker, asset.symbol, asset.name]
+    //     .map(value => normalizeTicker(value))
+    //     .filter(Boolean);
+    //   candidates.forEach(symbol => {
+    //     if (!symbolLookup.has(symbol)) symbolLookup.set(symbol, asset);
+    //   });
+    // });
 
     const stockRows = Object.values(ready || {}).filter(row => row && typeof row.key === 'string' && row.key.startsWith('stock_'));
     const stockBySymbol = new Map(stockRows.map(row => {
