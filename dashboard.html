@@ -1266,7 +1266,22 @@ async function renderIndicators() {
 
     const cards = window.HabitoMacro.formatMacroForDashboard(ready);
     const keys = window.HabitoMacro.MACRO_KEYS || {};
-    const stockAssets = (assets || []).filter(asset => (asset.type === 'Stock' || asset.type === 'ETF') && Number(asset.balance || 0) > 0);
+    const allPortfolioAssets = getAllPortfolioAssets();
+    const stockAssets = Object.values(
+      allPortfolioAssets
+        .filter(asset => (asset.type === 'Stock' || asset.type === 'ETF') && Number(asset.balance || 0) > 0)
+        .reduce((acc, asset) => {
+          const baseName = String(asset.name || asset.ticker || asset.symbol || '').trim();
+          const key = `${baseName.toLowerCase()}|${asset.type || 'Stock'}|${asset.currency || 'USD'}`;
+          if (!acc[key]) {
+            acc[key] = { ...asset, id: asset.id || key, balance: Number(asset.balance || 0) };
+            return acc;
+          }
+          acc[key].balance = Number(acc[key].balance || 0) + Number(asset.balance || 0);
+          return acc;
+        }, {})
+    );
+
     const myStocks = await Promise.all(stockAssets.map(async asset => {
       const quote = await fetchQuoteFromYahoo(asset.name || asset.ticker || asset.symbol || '');
       const price = quote?.value ?? null;
