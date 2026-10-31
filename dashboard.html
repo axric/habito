@@ -83,7 +83,9 @@
   </div>
   <div id="tab-goals" class="scroll-area" style="display:none;padding-bottom:140px;">
     <div class="section-label"><span>OBJETIVOS</span></div>
-    <div class="portfolio-switch" id="goals-portfolio-picker" aria-label="Seleccionar cartera"></div>
+    <div class="hero-portfolio-row" style="margin-top:0;margin-bottom:12px;">
+      <div class="hero-portfolio-picker" id="goals-portfolio-picker" aria-label="Seleccionar cartera"></div>
+    </div>
     <div id="goals-list"></div>
     <div id="goals-empty" class="empty-state" style="display:none;">
       <p>Sin objetivos.</p>
@@ -91,7 +93,9 @@
     </div>
   </div>
   <div id="tab-ai" class="scroll-area" style="display:none;padding-bottom:140px;">
-    <div class="portfolio-switch" id="ai-portfolio-picker" aria-label="Seleccionar cartera" style="margin-bottom:12px;"></div>
+    <div class="hero-portfolio-row" style="margin-top:0;margin-bottom:12px;">
+      <div class="hero-portfolio-picker" id="ai-portfolio-picker" aria-label="Seleccionar cartera"></div>
+    </div>
     <div id="ai-idle">
       <div style="text-align:center;padding:24px 16px 20px;">
         <div style="font-size:32px;margin-bottom:10px;">🤖</div>
@@ -401,14 +405,15 @@ function updatePortfolioButtons() {
     }).join('');
   }
 
-  document.querySelectorAll('.portfolio-switch').forEach(switcher => {
-    switcher.innerHTML = types.map(type => {
+  document.querySelectorAll('.hero-portfolio-picker').forEach(picker => {
+    if (picker.id === 'hero-portfolio-picker') return;
+    picker.innerHTML = types.map(type => {
       const isActive = type === activePortfolio;
       return `
         <button
           type="button"
-          class="portfolio-toggle ${isActive ? 'active' : 'inactive'}"
-          data-portfolio-toggle="${type}"
+          class="hero-portfolio-option ${isActive ? 'active' : ''}"
+          data-hero-portfolio-toggle="${type}"
           aria-pressed="${String(isActive)}"
           onclick="switchPortfolio('${type}')"
         >${getPortfolioLabel(type)}</button>
@@ -1247,6 +1252,7 @@ async function renderIndicators() {
     }, {
       title: 'Internacional',
       items: cards.filter(card => [keys.BRENT, keys.SP500, keys.BITCOIN].includes(card.key)),
+      neutralTitle: true,
     }, {
       title: 'Bonos del Tesoro de EEUU',
       items: window.HabitoMacro.formatTreasuries(ready),
@@ -1262,7 +1268,7 @@ async function renderIndicators() {
     }
 
     mount.innerHTML = sections.map(section => {
-      const titleClass = getMacroSectionTitleClass(section.items);
+      const titleClass = section.neutralTitle ? 'neu' : getMacroSectionTitleClass(section.items);
       const markup = section.items.map(item => {
         const changeClass = item.changeColor === 'pos' ? 'macro-change pos' : item.changeColor === 'neg' ? 'macro-change neg' : 'macro-change neu';
         const changeHtml = item.change && item.change !== '—' ? `<span class="${changeClass}">${escapeHtml(item.change)}</span>` : '<span class="macro-change neu">—</span>';
