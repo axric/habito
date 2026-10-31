@@ -1336,25 +1336,33 @@ async function renderIndicators() {
     });
 
     const stockRows = Object.values(ready || {}).filter(row => row && typeof row.key === 'string' && row.key.startsWith('stock_'));
-    const myStocks = stockRows.map(row => {
+    const stockBySymbol = new Map(stockRows.map(row => {
       const symbol = row.key.replace(/^stock_/, '');
-      const asset = symbolLookup.get(symbol) || symbolLookup.get(symbol.toUpperCase()) || null;
-      const value = Number(row.value ?? '');
-      const change = String(row.change || '').trim();
-      const parsedChange = Number.parseFloat(change.replace(/[^0-9.-]/g, ''));
-      const priceText = Number.isFinite(value) ? `${asset?.currency === 'USD' ? 'u$s' : '$'} ${fmtNum(value, 2)}` : '—';
-      const changeText = Number.isFinite(parsedChange) ? `${parsedChange >= 0 ? '+' : ''}${parsedChange.toFixed(2)}%` : '—';
-      const changeColor = Number.isFinite(parsedChange) ? (parsedChange >= 0 ? 'pos' : 'neg') : 'neu';
+      return [symbol, row];
+    }));
+
+    const myStocks = await Promise.all(stockAssets.map(async asset => {
+      const candidates = [asset.ticker, asset.symbol, asset.name]
+        .map(value => normalizeTicker(value))
+        .filter(Boolean);
+      const stored = candidates
+        .map(symbol => stockBySymbol.get(symbol) || stockBySymbol.get(symbol.toUpperCase()))
+        .find(Boolean);
+      const quote = stored ? { value: Number(stored.value ?? ''), change: Number.parseFloat(String(stored.change || '').replace(/[^0-9.-]/g, '')) } : await fetchQuoteFromYahoo(asset.name || asset.ticker || asset.symbol || '');
+      const price = Number.isFinite(Number(quote?.value)) ? Number(quote.value) : null;
+      const change = Number.isFinite(Number(quote?.change)) ? Number(quote.change) : null;
+      const priceText = price == null ? '—' : `${asset.currency === 'USD' ? 'u$s' : '$'} ${fmtNum(price, 2)}`;
+      const changeText = change == null ? '—' : `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
 
       return {
-        key: row.key,
-        label: asset?.name || row.label || symbol,
+        key: asset.id || asset.name || candidates[0] || 'stock',
+        label: asset.name,
         value: priceText,
         change: changeText,
-        changeColor,
-        sub: `${asset?.type || 'Acción'} · precio actual`,
+        changeColor: change == null ? 'neu' : (change >= 0 ? 'pos' : 'neg'),
+        sub: `${asset.type || 'Acción'} · precio actual`,
       };
-    });
+    }));
 
     const treasuryCards = window.HabitoMacro.formatTreasuries(ready);
     const sections = [{
@@ -1378,7 +1386,7 @@ async function renderIndicators() {
       neutralTitle: true,
     }];
 
-    if (myStocks.length) {
+    if (stockAssets.length) {
       sections.unshift({
         title: 'Mis acciones',
         items: myStocks,
